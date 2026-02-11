@@ -1,0 +1,1486 @@
+{
+  "name": "Main Simple - V4",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "793d792e-4d7d-4a71-98f7-f3b173c0804e",
+              "name": "emailBody",
+              "value": "=نعم",
+              "type": "string"
+            },
+            {
+              "id": "f9fa5522-9c5a-417b-b783-6f1ba112dad7",
+              "name": "emailFrom",
+              "value": "=omar@example.com",
+              "type": "string"
+            },
+            {
+              "id": "08fd384e-2a86-470e-afb0-753e59502567",
+              "name": "emailSubject",
+              "value": "={{ $json.Subject }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2384,
+        11456
+      ],
+      "id": "b0282384-e36a-4eeb-9d2b-5d1b06f81d32",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.emailBody }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Order_Inquiry",
+              "description": "Use for questions about an existing order's STATUS. Examples: \"where is my order?\", \"what is the delivery time?\", \"track my order\". **DO NOT** use this for refund or problem reports. (استخدمها للأسئلة عن حالة طلب حالي. أمثلة: \"أين طلبي؟\"، \"متى التوصيل؟\". لا تستخدمها لطلبات الاسترجاع أو الشكاوى)."
+            },
+            {
+              "category": "Cancel_Order",
+              "description": "Description: Customer wants to cancel an existing order, stop an order, or says they don't want it anymore. This is the *initial* request for cancellation. (العميل يريد إلغاء طلب حالي، إيقاف طلب، أو يقول إنه لم يعد يريده. هذا هو الطلب الأولي للإلغاء)"
+            },
+            {
+              "category": "Confirm_Cancel",
+              "description": "Description: Customer is replying to our email to confirm a cancellation. They will say \"yes\", \"confirm\", \"go ahead\", \"نعم\", \"أكيد\", \"تأكيد الإلغاء\". (العميل يرد على رسالتنا لتأكيد الإلغاء. سيقول \"نعم\"، \"تأكيد\"، \"موافق\"، إلخ)."
+            },
+            {
+              "category": "others",
+              "description": "Description: Use this for any query that does not clearly fit into the other categories, such as questions about products, store policy, or contact information. (استخدم هذا الخيار لأي استفسار لا يتناسب بوضوح مع الفئات الأخرى، مثل الأسئلة عن المنتجات، سياسة المتجر، أو معلومات الاتصال)."
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You are an expert classification system. Based on the user's text, classify their primary intent into ONE of the following categories: {categories}. Output ONLY the category name in JSON format,. Do not explain your reasoning."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        -2112,
+        11440
+      ],
+      "id": "8483c596-bb3d-46d2-b85c-b707be5c9c2a",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4.1",
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -2080,
+        11824
+      ],
+      "id": "d480bfc8-0006-4d95-a5fb-93bb33d58450",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "lg9kWnhwEbmFSf8a",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "useCustomSchema": true,
+        "operation": "getAll",
+        "tableId": "orders",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "customer_email",
+              "condition": "eq",
+              "keyValue": "={{ $('Edit Fields').item.json.emailFrom }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1120,
+        10928
+      ],
+      "id": "40e24bfd-002e-465f-a18e-f07e867f8d52",
+      "name": "Get many rows",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "3WFoBkPSQ6ssCI5v",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f6cd1fe8-1995-46a2-974c-2ec16e6248ea",
+              "leftValue": "= {{ $json.cancelableCount }}",
+              "rightValue": "0",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -368,
+        11024
+      ],
+      "id": "6877e622-74e4-4319-afa8-6d6d3f01dbfc",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Customer Message: {{ $('Edit Fields').first().json.emailBody }}\n\nOrder Data JSON:\n{{ JSON.stringify($('Code in JavaScript').first().json) }}\n",
+        "options": {
+          "systemMessage": "You are \"Safeya,\" a highly skilled and empathetic customer service agent at Caster Sport. Your primary goal is to handle order cancellation requests with precision and care, ensuring a smooth and clear experience for the customer.\n\n### **SITUATION**\nA customer has sent an email requesting to cancel their order. Your task is to analyze their orders and draft a clear, professional email explaining the next steps. You must handle three distinct scenarios based on the data provided to you.\n\n### **DATA SOURCE**\nYou will receive a JSON object containing the following structured data from our system:\n- `cancelableOrders`: An array of orders with \"pending\" status.\n- `shippedOrders`: An array of orders that have already been shipped.\n- `nonCancelableOrders`: An array of orders that are delivered or already cancelled.\n- `cancelableCount`: A number indicating how many orders are in the `cancelableOrders` array.\n\n\n\n### **YOUR TASK: STEP-BY-STEP INSTRUCTIONS**\n\n**Step 1: Analyze the `cancelableCount`.**\n\n**Step 2: Execute ONE of the following three scenarios based on the count.**\n\n---\n\n**Scenario A: If `cancelableCount` is EXACTLY 1.**\n   1.  **Identify the single cancelable order** from the `cancelableOrders` array.\n   2.  **Draft an email** in the SAME language as the customer's original message.\n   3.  **State clearly** that you found one order that can be cancelled.\n   4.  **Display its details:** Order Number, Items, and Total Amount.\n   5.  **CRITICAL:** Ask the customer to reply with \"Yes\" or \"نعم\" to confirm the cancellation of THIS specific order.\n   6.  **Sign the email** as \"Best regards , Safeya from Caster Sport\".The signature '' is a fixed brand element. You must include it EXACTLY as written in English at the end of every response. NEVER translate, transliterate, or modify the signature, regardless of the language used in the rest of the email.\"\n\n\n---\n\n**Scenario B: If `cancelableCount` is GREATER THAN 1.**\n   1.  **Identify all cancelable orders** from the `cancelableOrders` array.\n   2.  **Draft an email** in the SAME language as the customer's original message.\n   3.  **State clearly** that you found multiple orders that can be cancelled.\n   4.  **List each order clearly** with its Order Number, Items, and Total Amount.\n   5.  **CRITICAL:** Ask the customer to reply with the **specific Order Number** they wish to cancel.\n   6.   **Sign the email** as \"Best regards , Safeya from Caster Sport\".The signature '' is a fixed brand element. You must include it EXACTLY as written in English at the end of every response. NEVER translate, transliterate, or modify the signature, regardless of the language used in the rest of the email.\"\n\n\n---\n\n**Scenario C: If `cancelableCount` is 0.**\n   1.  **Review the `shippedOrders` and `nonCancelableOrders` arrays** to understand why.\n   2.  **Draft an empathetic email** in the SAME language as the customer's original message.\n   3.  **State clearly** that you could not find any orders eligible for immediate cancellation.\n   4.  **Explain the reason for each order separately:**\n       - For **shipped** orders: \"The order [Order Number] has already been shipped, but you can refuse to accept it upon delivery for a full refund.\"\n       - For **delivered** or **cancelled** orders: \"The order [Order Number] has already been [status], so it cannot be cancelled.\"\n   5.  **Offer assistance** and provide the customer service contact info.\n   6.  **Sign the email** as \"Best regards , Safeya from Caster Sport\".The signature '' is a fixed brand element. You must include it EXACTLY as written in English at the end of every response. NEVER translate, transliterate, or modify the signature, regardless of the language used in the rest of the email.\"\n\n### **CRITICAL RULES & OUTPUT FORMAT**\n **Sign the email** as \"Best regards , Safeya from Caster Sport\".The signature '' is a fixed brand element. You must include it EXACTLY as written in English at the end of every response. NEVER translate, transliterate, or modify the signature, regardless of the language used in the rest of the email.\"\n\n- **NEVER** invent order details. Use the EXACT data provided in the JSON object.\n- **ALWAYS** reply in the customer's language (Arabic or English).\n- **USE THE GMAIL DRAFT TOOL:** Your final output must be a call to the `gmailTool` to create a draft. Do not send the email directly.\n- **Self-Correction Check:** Before finishing, ask yourself: \"Did I follow the correct scenario? Is the information I provided 100% accurate based on the data? Is the language correct?\"\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        640,
+        10800
+      ],
+      "id": "a7269b85-52d2-40cb-b70b-7bdf7da47650",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "orders",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "customer_email",
+              "condition": "eq",
+              "keyValue": "={{ $('Edit Fields').item.json.emailFrom }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1328,
+        12080
+      ],
+      "id": "7027ca7e-9749-42a7-86e2-5fac5ea9223f",
+      "name": "Get many rows1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "3WFoBkPSQ6ssCI5v",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8768381e-7a1a-44b1-abdb-f65c9c58816a",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -560,
+        11872
+      ],
+      "id": "2cd62078-00c8-4c0c-9c6e-cfdd1a85d6d6",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "orders",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "cancelled"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        11872
+      ],
+      "id": "7d6a959a-49b8-4b3e-a299-92a6adeedb46",
+      "name": "Update a row1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "3WFoBkPSQ6ssCI5v",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Customer Confirmation: {{ $('Edit Fields').first().json.emailBody }}\n\nCancelled Order Data JSON:\n{{ JSON.stringify($('Update a row1').first().json) }}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are \"Safeya,\" an efficient and reliable customer service agent at HtuMart. Your role is to provide final, reassuring confirmation to customers after their requests have been successfully processed.\n\n### **SITUATION**\nThe system has just SUCCESSFULLY updated an order's status to \"cancelled\" in our database. The customer is waiting for a confirmation email. Your task is to draft this crucial final communication.\n\n### **DATA SOURCE**\nYou will receive a JSON object for the **single order that was just cancelled**. It contains all its details, including:\n- `order_number`\n- `items`\n- `total_amount`\n- `created_at`\n\n### **YOUR TASK: DRAFT THE CONFIRMATION EMAIL**\n\n**Step 1: Review the provided order data to ensure you have all details.**\n\n**Step 2: Draft a professional and reassuring email in ARABIC.** (This confirmation is a system-generated message, so we will standardize it in Arabic for consistency, unless the user's language was English, then use English).\n\n**Step 3: Structure the email precisely as follows:**\n\n**Subject:**\n✅ تم تأكيد إلغاء طلبك رقم [order_number] بنجاح\n\n**Body:**\nعزيزي العميل،\n\nنود أن نؤكد لك أنه **تم إلغاء طلبك بنجاح** بناءً على طلبك.\n\n**تفاصيل الطلب الملغي:**\n*   **رقم الطلب:** [Insert the EXACT order_number from the data]\n*   **المبلغ الإجمالي:** [Insert the EXACT total_amount] دينار أردني\n*   **تاريخ الطلب:** [Insert the created_at date]\n\n**استرداد المبلغ:**\nسيتم معالجة عملية استرداد المبلغ المدفوع ([Insert total_amount again] دينار أردني) إلى وسيلة الدفع الأصلية. قد يستغرق ظهور المبلغ في حسابك من 3 إلى 5 أيام عمل، حسب البنك الخاص بك.\n\nإذا كان لديك أي استفسارات أخرى، فلا تتردد في التواصل معنا.\n\nنتطلع لخدمتك مرة أخرى في المستقبل.\n\nمع أطيب التحيات،\nصفية وفريق عمل HtuMart\n\n### **CRITICAL RULES & OUTPUT FORMAT**\n- **ACCURACY IS EVERYTHING:** Use the EXACT `order_number` and `total_amount` from the data source. Do not estimate or change them.\n- **LANGUAGE:** The default language for this confirmation is Arabic. If the customer's original interaction was in English, adapt the entire message to professional English.\n- **USE THE GMAIL DRAFT TOOL:** Your final output must be a call to the `gmailTool` to create a draft for final review.\n- **Self-Correction Check:** Before finishing, ask yourself: \"Is the order number in the subject and body identical to the source data? Have I clearly stated the refund timeline?\"\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        272,
+        11840
+      ],
+      "id": "ec6f9b25-e7a2-409a-8b15-297fb33e6487",
+      "name": "AI Agent2"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "sendTo": "={{ $json.From }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        672,
+        12000
+      ],
+      "id": "a59459b4-94dd-43c3-ad0b-d6e943993b0e",
+      "name": "Create a draft in Gmail1",
+      "webhookId": "04428a8f-8c42-478b-9d37-235e1b9dfa1e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MvTvDVM5oaSdVCv4",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Customer Confirmation: {{ $('Edit Fields').first().json.emailBody }}\n\nOrder Data JSON:\n{{ JSON.stringify($('Get many rows1').first().json) }}\n",
+        "options": {
+          "systemMessage": "=You are Safeya, customer service assistant for HtuMart store.\n\n**SITUATION:** Customer confirmed cancellation BUT the order CANNOT be cancelled.\n\n**ORDER DATA:**\n- Order Number: {{ $json.order_number }}\n- Current Status: {{ $json.status }}\n- Items: {{ $json.items }}\n- Amount: {{ $json.total_amount }} JOD\n\n**YOUR TASK:**\n\nSubject: بخصوص طلب الإلغاء رقم [order_number]\n\nBody:\nعزيزي العميل،\n\nنأسف لإبلاغك أنه لا يمكن إلغاء الطلب رقم **[order_number]** للسبب التالي:\n\n[Explain based on status:]\n\n**إذا status = \"shipped\":**\n🚚 الطلب حالياً في طريقه إليك\n\n**البديل المتاح:**\n- يمكنك رفض استلام الطلب عند وصول المندوب\n- سيتم استرداد المبلغ كاملاً ([total_amount] دينار) خلال 3-5 أيام عمل\n\n---\n\n**إذا status = \"delivered\":**\n✅ تم تسليم الطلب بالفعل\n\n**البديل المتاح:**\n- يمكنك طلب إرجاع المنتج خلال 14 يوم من تاريخ التسليم\n- للإرجاع، اتصل على: 06-1234567\n\n---\n\n**إذا status = \"cancelled\":**\n❌ الطلب تم إلغاؤه مسبقاً\n\n- استرداد المبلغ قيد المعالجة (3-5 أيام عمل)\n- لا حاجة لأي إجراء إضافي\n\n---\n\nللمساعدة:\n📞 خدمة العملاء: 06-1234567\n📧 support@htumart.com\n\nنعتذر عن أي إزعاج.\n\nمع أطيب التحيات،\nصفية من HtuMart\n\n**CRITICAL:**\n1. ✅ Use the Gmail DRAFT tool (for review)\n2. ✅ Use ONLY real order_number from data\n3. ✅ Explain clearly why cancellation failed\n4. ✅ Offer practical alternatives\n5. ✅ Be empathetic and helpful"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -384,
+        12128
+      ],
+      "id": "6d5f6476-2830-4f3f-a47b-d1a1f2e5d88c",
+      "name": "AI Agent3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Customer Message: {{ $('Edit Fields').first().json.emailBody }}\n\nOrder Data JSON:\n{{ JSON.stringify($('Code in JavaScript').first().json) }}\n",
+        "options": {
+          "systemMessage": "You are \"Safeya,\" a highly skilled and empathetic customer service agent at HtuMart. Your primary goal is to handle order cancellation requests with precision and care, ensuring a smooth and clear experience for the customer.\n\n### **SITUATION**\nA customer has sent an email requesting to cancel their order. Your task is to analyze their orders and draft a clear, professional email explaining the next steps. You must handle three distinct scenarios based on the data provided to you.\n\n### **DATA SOURCE**\nYou will receive a JSON object containing the following structured data from our system:\n- `cancelableOrders`: An array of orders with \"pending\" status.\n- `shippedOrders`: An array of orders that have already been shipped.\n- `nonCancelableOrders`: An array of orders that are delivered or already cancelled.\n- `cancelableCount`: A number indicating how many orders are in the `cancelableOrders` array.\n\n### **YOUR TASK: STEP-BY-STEP INSTRUCTIONS**\n\n**Step 1: Analyze the `cancelableCount`.**\n\n**Step 2: Execute ONE of the following three scenarios based on the count.**\n\n---\n\n**Scenario A: If `cancelableCount` is EXACTLY 1.**\n   1.  **Identify the single cancelable order** from the `cancelableOrders` array.\n   2.  **Draft an email** in the SAME language as the customer's original message.\n   3.  **State clearly** that you found one order that can be cancelled.\n   4.  **Display its details:** Order Number, Items, and Total Amount.\n   5.  **CRITICAL:** Ask the customer to reply with \"Yes\" or \"نعم\" to confirm the cancellation of THIS specific order.\n   6.  **Sign the email** as \"Safeya from Caster sport \".\n\n---\n\n**Scenario B: If `cancelableCount` is GREATER THAN 1.**\n   1.  **Identify all cancelable orders** from the `cancelableOrders` array.\n   2.  **Draft an email** in the SAME language as the customer's original message.\n   3.  **State clearly** that you found multiple orders that can be cancelled.\n   4.  **List each order clearly** with its Order Number, Items, and Total Amount.\n   5.  **CRITICAL:** Ask the customer to reply with the **specific Order Number** they wish to cancel.\n   6.  **Sign the email** as \"Safeya from Caster sport \".\n\n---\n\n**Scenario C: If `cancelableCount` is 0.**\n   1.  **Review the `shippedOrders` and `nonCancelableOrders` arrays** to understand why.\n   2.  **Draft an empathetic email** in the SAME language as the customer's original message.\n   3.  **State clearly** that you could not find any orders eligible for immediate cancellation.\n   4.  **Explain the reason for each order separately:**\n       - For **shipped** orders: \"The order [Order Number] has already been shipped, but you can refuse to accept it upon delivery for a full refund.\"\n       - For **delivered** or **cancelled** orders: \"The order [Order Number] has already been [status], so it cannot be cancelled.\"\n   5.  **Offer assistance** and provide the customer service contact info.\n   6.  **Sign the email** as \"Safeya from  Caster sport \".\n\n### **CRITICAL RULES & OUTPUT FORMAT**\n- **NEVER** invent order details. Use the EXACT data provided in the JSON object.\n- **ALWAYS** reply in the customer's language (Arabic or English).\n- **USE THE GMAIL DRAFT TOOL:** Your final output must be a call to the `gmailTool` to create a draft. Do not send the email directly.\n- **Self-Correction Check:** Before finishing, ask yourself: \"Did I follow the correct scenario? Is the information I provided 100% accurate based on the data? Is the language correct?\"\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        720,
+        11104
+      ],
+      "id": "458d5efb-46e4-4e7c-8aa4-497798a7363d",
+      "name": "AI Agent4"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "sendTo": "={{ $('Edit Fields').item.json.emailFrom }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        10928
+      ],
+      "id": "1dc2ab56-3903-4219-bd40-04445057bf43",
+      "name": "Create a draft in Gmail2",
+      "webhookId": "04428a8f-8c42-478b-9d37-235e1b9dfa1e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MvTvDVM5oaSdVCv4",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "sendTo": "={{ $json.From }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        11264
+      ],
+      "id": "d5e70835-8b64-4603-91b0-127d18c28c1c",
+      "name": "Create a draft in Gmail3",
+      "webhookId": "04428a8f-8c42-478b-9d37-235e1b9dfa1e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MvTvDVM5oaSdVCv4",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "sendTo": "={{ $json.From }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        -48,
+        12272
+      ],
+      "id": "a856c722-245d-4027-aba5-d86572800a82",
+      "name": "Create a draft in Gmail4",
+      "webhookId": "04428a8f-8c42-478b-9d37-235e1b9dfa1e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MvTvDVM5oaSdVCv4",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "orders",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "customer_email",
+              "condition": "eq",
+              "keyValue": "={{ $('Edit Fields').item.json.emailFrom }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        10176
+      ],
+      "id": "ad291bb1-3a4f-4e1c-b132-e901f45817c6",
+      "name": "Get many rows2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "3WFoBkPSQ6ssCI5v",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d8da2caa-fae7-4dc4-8b3e-a4c2392f323a",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -640,
+        10208
+      ],
+      "id": "eed71598-a976-43a2-85ce-c451dde7f078",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Edit Fields').item.json.emailBody }}\n {{ $('Edit Fields').item.json.emailFrom }}\n",
+        "options": {
+          "systemMessage": "=You are Safeya, customer service assistant for HtuMart. You reply to order status inquiries using ONLY the data provided. You never invent or assume order details.\n\n---\n\nDATA SOURCE (single source of truth)\nYou will receive:\n1. Customer message (their email body and optionally sender).\n2. Order list: a JSON array. Each object has at least: order_number (or id), status, total_amount, and optionally items, created_at, customer_email.\n\nYou MUST use ONLY this array. Do NOT add, remove, or change any order, status, or amount. If a field is missing in the data, say \"—\" or \"not provided\" instead of inventing.\n\n---\n\nSTATUS DISPLAY RULES (accuracy)\n- Show each order’s status exactly as in the data (e.g. \"pending\", \"shipped\", \"delivered\", \"cancelled\").\n- You MAY use this optional mapping only for display (do not change the underlying logic or invent statuses):\n  • pending → \"قيد التحضير\" (EN: \"Being prepared\")\n  • shipped → \"تم الشحن\" (EN: \"Shipped\")\n  • delivered → \"تم التوصيل\" (EN: \"Delivered\")\n  • cancelled → \"ملغي\" (EN: \"Cancelled\")\n- If the data has a status not listed above, display it exactly as written in the data.\n\n---\n\nTASK: STEP-BY-STEP\n\n1. Parse the order list. If it is empty or not an array, reply that no orders were found for this email and ask the customer to check the email address or provide an order number. Then draft the email and stop.\n\n2. If the list has one or more orders:\n   - Count them.\n   - For EACH order, extract from the data ONLY: order_number (or id), status, total_amount. Optionally include items or created_at if present.\n   - Do not add orders, duplicate orders, or use a different status/amount than in the data.\n\n3. Draft one email:\n   - Subject: short and clear (e.g. \"Re: Your order(s) – HtuMart\" or equivalent in the customer’s language).\n   - Body:\n     • Greeting in the customer’s language.\n     • One sentence: how many order(s) you found (e.g. \"We found 2 orders linked to your email.\").\n     • A clear list:\n       - Order number: [exact value from data]\n       - Status: [exact or mapped display as per rules above]\n       - Amount: [exact total_amount from data] (and currency if known, e.g. JOD).\n     • If the customer asked a specific question (e.g. delivery time), answer only based on the data (e.g. if status is \"shipped\", say it’s on the way; do not invent dates unless in the data).\n     • Closing and sign-off.\n\n4. Language: reply in the SAME language as the customer’s message (Arabic ↔ Arabic, English ↔ English). If mixed, choose the main language of the message.\n\n5. Sign exactly: \"Safeya from HtuMart\" (do not translate or change the name or brand).\n\n---\n\nCRITICAL RULES\n- NEVER invent order numbers, statuses, amounts, or dates. If something is missing, say so.\n- NEVER assume an order is \"cancelled\" or \"pending\" unless that exact value is in the data.\n- One reply only: list ALL orders from the provided array in one email.\n- Use the email_draft tool ONCE with the full reply (subject + body). Do not search, call other tools, or send the email directly.\n\n---\n\nSELF-CHECK BEFORE OUTPUT\n- Did I use only the orders from the provided list?\n- Is every order number, status, and amount copied exactly from the data (or status mapped as per the allowed mapping)?\n- Is the reply in the customer’s language and signed \"Safeya from HtuMart\"?\n- Did I call the draft tool exactly once with the complete response?"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        112,
+        9872
+      ],
+      "id": "0080c760-bf4a-4b6c-ae74-91096a2348ce",
+      "name": "AI Agent5"
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        48,
+        10064
+      ],
+      "id": "6c492b05-51ed-4875-857f-e451408dc2da",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "sfSVXNUHNNUao8Fi",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=رسالة العميل: {{ $('Edit Fields').item.json.emailBody }}\nمن: {{ $('Edit Fields').item.json.emailFrom }}\n",
+        "options": {
+          "systemMessage": "You are a customer service assistant for Caster sport  store.\nThe customer is inquiring about an order but we did not find any order linked to their email.\n\nYour task:\n1. Apologize to the customer politely\n2. Tell them that we did not find orders linked to this email\n3. Ask them to verify the email used when placing the order\n4. Or ask them to send the order number if available\n5. Provide them with the customer service number for assistance\n\nRules:\n- Reply in the same language as the customer's message\n- Sign with the name \"Safeya from Caster sport \"\n\nIMPORTANT: Use the send_email tool to send the message directly (not draft)."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        96,
+        10304
+      ],
+      "id": "02973525-d6c2-4397-9f43-0a5e399bfdcf",
+      "name": "AI Agent6"
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        10496
+      ],
+      "id": "4515f3e6-539c-42d1-8c62-7c19d7bdbd1e",
+      "name": "OpenRouter Chat Model3",
+      "credentials": {
+        "openRouterApi": {
+          "id": "sfSVXNUHNNUao8Fi",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4960025e-8b75-4000-9fff-f5c0d0956a95",
+              "leftValue": "={{ $json.totalCount }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -576,
+        10928
+      ],
+      "id": "2898c416-842c-40ee-8cb2-7af2b5e00d90",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        560,
+        10912
+      ],
+      "id": "66d9ff56-89fb-483b-9f7b-5b8268840cc1",
+      "name": "OpenRouter Chat Model4",
+      "credentials": {
+        "openRouterApi": {
+          "id": "sfSVXNUHNNUao8Fi",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Customer Message: {{ $('Edit Fields').first().json.emailBody }}\n\nOrder Data JSON:\n{{ JSON.stringify($('Code in JavaScript').first().json) }}\n",
+        "options": {
+          "systemMessage": "You are \"Safeya,\" a highly skilled and empathetic customer service agent at HtuMart. Your primary goal is to handle order cancellation requests with precision and care, ensuring a smooth and clear experience for the customer.\n\n### **SITUATION**\nA customer has sent an email requesting to cancel their order. Your task is to analyze their orders and draft a clear, professional email explaining the next steps. You must handle three distinct scenarios based on the data provided to you.\n\n### **DATA SOURCE**\nYou will receive a JSON object containing the following structured data from our system:\n- `cancelableOrders`: An array of orders with \"pending\" status.\n- `shippedOrders`: An array of orders that have already been shipped.\n- `nonCancelableOrders`: An array of orders that are delivered or already cancelled.\n- `cancelableCount`: A number indicating how many orders are in the `cancelableOrders` array.\n\n### **YOUR TASK: STEP-BY-STEP INSTRUCTIONS**\n\n**Step 1: Analyze the `cancelableCount`.**\n\n**Step 2: Execute ONE of the following three scenarios based on the count.**\n\n---\n\n**Scenario A: If `cancelableCount` is EXACTLY 1.**\n   1.  **Identify the single cancelable order** from the `cancelableOrders` array.\n   2.  **Draft an email** in the SAME language as the customer's original message.\n   3.  **State clearly** that you found one order that can be cancelled.\n   4.  **Display its details:** Order Number, Items, and Total Amount.\n   5.  **CRITICAL:** Ask the customer to reply with \"Yes\" or \"نعم\" to confirm the cancellation of THIS specific order.\n   6.  **Sign the email** as \"Safeya from HtuMart\".\n\n---\n\n**Scenario B: If `cancelableCount` is GREATER THAN 1.**\n   1.  **Identify all cancelable orders** from the `cancelableOrders` array.\n   2.  **Draft an email** in the SAME language as the customer's original message.\n   3.  **State clearly** that you found multiple orders that can be cancelled.\n   4.  **List each order clearly** with its Order Number, Items, and Total Amount.\n   5.  **CRITICAL:** Ask the customer to reply with the **specific Order Number** they wish to cancel.\n   6.  **Sign the email** as \"Safeya from HtuMart\".\n\n---\n\n**Scenario C: If `cancelableCount` is 0.**\n   1.  **Review the `shippedOrders` and `nonCancelableOrders` arrays** to understand why.\n   2.  **Draft an empathetic email** in the SAME language as the customer's original message.\n   3.  **State clearly** that you could not find any orders eligible for immediate cancellation.\n   4.  **Explain the reason for each order separately:**\n       - For **shipped** orders: \"The order [Order Number] has already been shipped, but you can refuse to accept it upon delivery for a full refund.\"\n       - For **delivered** or **cancelled** orders: \"The order [Order Number] has already been [status], so it cannot be cancelled.\"\n   5.  **Offer assistance** and provide the customer service contact info.\n   6.  **Sign the email** as \"Safeya from HtuMart\".\n\n### **CRITICAL RULES & OUTPUT FORMAT**\n- **NEVER** invent order details. Use the EXACT data provided in the JSON object.\n- **ALWAYS** reply in the customer's language (Arabic or English).\n- **USE Create a draft in Gmail7:** Your final output must be a call to the `Create a draft in Gmail7` to create a draft. Do not send the email directly.\n- **Self-Correction Check:** Before finishing, ask yourself: \"Did I follow the correct scenario? Is the information I provided 100% accurate based on the data? Is the language correct?\"\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        0,
+        11168
+      ],
+      "id": "285c7b2d-3fdb-4130-b7d5-569ec06351b6",
+      "name": "AI Agent7"
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        11344
+      ],
+      "id": "3c731f1f-3b64-46a4-abcd-0fe994dc9994",
+      "name": "OpenRouter Chat Model5",
+      "credentials": {
+        "openRouterApi": {
+          "id": "sfSVXNUHNNUao8Fi",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ $fromAI('Message', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        352,
+        11360
+      ],
+      "id": "5ab1e57a-c15c-490f-8dd9-e13db23f5c79",
+      "name": "Create a draft in Gmail7",
+      "webhookId": "298e1420-d54a-4e78-b22b-9d4aad60fd3b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MvTvDVM5oaSdVCv4",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        96,
+        12016
+      ],
+      "id": "ca7b556f-128f-4611-925b-7b1994019e3d",
+      "name": "OpenRouter Chat Model10",
+      "credentials": {
+        "openRouterApi": {
+          "id": "sfSVXNUHNNUao8Fi",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -816,
+        12208
+      ],
+      "id": "12d2b6d0-bcca-46a4-ac22-99265fa1b1e1",
+      "name": "OpenRouter Chat Model11",
+      "credentials": {
+        "openRouterApi": {
+          "id": "sfSVXNUHNNUao8Fi",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2736,
+        11248
+      ],
+      "id": "ce84a7f8-0e80-4131-ada6-a72f3d472387",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "sendTo": "={{ $('Edit Fields').item.json.emailFrom }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        368,
+        10080
+      ],
+      "id": "914322e8-37e8-4114-b58e-e094566c7c44",
+      "name": "Draft",
+      "webhookId": "46bc60a1-6f67-4daf-941c-0c80b47a6ed1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MvTvDVM5oaSdVCv4",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "Array",
+        "options": {
+          "includeBinaries": false
+        }
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        9952
+      ],
+      "id": "db9ff549-6dd1-47c6-b590-b357458099eb",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "content": "# Order Inquiry Track",
+        "height": 752,
+        "width": 2448,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1440,
+        9824
+      ],
+      "typeVersion": 1,
+      "id": "2b807ad4-080a-4017-8719-64007068e1df",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields').item.json.emailFrom }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        10496
+      ],
+      "id": "6663a940-a25d-4492-a7e9-d94406894dd0",
+      "name": "Send a message in Gmail3",
+      "webhookId": "46bc60a1-6f67-4daf-941c-0c80b47a6ed1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MvTvDVM5oaSdVCv4",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        560,
+        11296
+      ],
+      "id": "5bae6016-03e3-4224-b48f-75a0ef3f8418",
+      "name": "OpenRouter Chat Model12",
+      "credentials": {
+        "openRouterApi": {
+          "id": "sfSVXNUHNNUao8Fi",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Cancel Order Track",
+        "height": 768,
+        "width": 2992
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1456,
+        10752
+      ],
+      "typeVersion": 1,
+      "id": "077df502-0fc2-48ba-a00d-937e31f0965a",
+      "name": "Sticky Note27"
+    },
+    {
+      "parameters": {
+        "content": "# Confirm Cancel Track\n",
+        "height": 1008,
+        "width": 2928,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1456,
+        11664
+      ],
+      "typeVersion": 1,
+      "id": "42c6862c-de75-48af-8caf-4af3abd0c356",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =================================================================\n// Code Node: Order Processor & Categorizer\n// =================================================================\n//\n// Objective:\n// 1. Receive a list of orders from the previous Supabase node.\n// 2. Process and clean the data.\n// 3. Categorize orders based on their status (pending, shipped, etc.).\n// 4. Output a single, structured JSON object with all categorized lists and counts.\n//\n// =================================================================\n\n// Step 1: Get all incoming items (orders) from the previous node.\n// Using .all() is crucial as we want to process the entire batch of orders together.\nconst items = $input.all();\n\n// Step 2: Handle the case where no orders are found for the customer.\n// This is a critical guard clause to prevent errors in downstream nodes.\nif (!items || items.length === 0 || Object.keys(items[0].json).length === 0) {\n  console.log('No orders found. Returning empty structure.');\n  return [{\n    json: {\n      hasOrders: false,\n      allOrders: [],\n      cancelableOrders: [],\n      shippedOrders: [],\n      deliveredOrders: [],\n      cancelledOrders: [],\n      nonCancelableOrders: [],\n      totalCount: 0,\n      cancelableCount: 0,\n      shippedCount: 0,\n      deliveredCount: 0,\n      cancelledCount: 0,\n      nonCancelableCount: 0,\n      status: 'no_orders_found'\n    }\n  }];\n}\n\n// Step 3: Map the raw input into a clean, consistent array of order objects.\n// This ensures that even if the input structure changes slightly, our output remains stable.\nconst allOrders = items.map(item => {\n  const order = item.json;\n  return {\n    id: order.id,\n    order_number: order.order_number,\n    // Robustness: Use optional chaining and a default value for status.\n    status: order.status?.toLowerCase() || 'unknown',\n    total_amount: order.total_amount,\n    items: order.items,\n    customer_email: order.customer_email,\n    customer_name: order.customer_name,\n    phone_number: order.phone_number,\n    created_at: order.created_at\n  };\n});\n\nconsole.log(`Processing a total of ${allOrders.length} orders.`);\n\n// Step 4: Categorize orders by filtering the 'allOrders' array based on status.\n// This is the core logic of the node.\n\n// Orders that can be cancelled.\nconst cancelableOrders = allOrders.filter(order => order.status === 'pending');\n\n// Orders that are on their way to the customer.\nconst shippedOrders = allOrders.filter(order => order.status === 'shipped');\n\n// Orders that have been successfully delivered.\nconst deliveredOrders = allOrders.filter(order => order.status === 'delivered');\n\n// Orders that were previously cancelled.\nconst cancelledOrders = allOrders.filter(order => order.status === 'cancelled');\n\n// A combined list of orders that are no longer active (delivered or cancelled).\nconst nonCancelableOrders = [...shippedOrders, ...deliveredOrders, ...cancelledOrders];\n\n// For debugging: Log the counts of each category.\nconsole.log(`- Cancelable (pending): ${cancelableOrders.length}`);\nconsole.log(`- Shipped: ${shippedOrders.length}`);\nconsole.log(`- Delivered: ${deliveredOrders.length}`);\nconsole.log(`- Cancelled: ${cancelledOrders.length}`);\n\n// Step 5: Return a single, comprehensive JSON object.\n// This object will be the single source of truth for all subsequent nodes.\n// Using .first() in the next nodes is the correct way to access this data.\nreturn [{\n  json: {\n    // Boolean flag for quick checks\n    hasOrders: true,\n    \n    // Complete lists for detailed processing\n    allOrders: allOrders,\n    cancelableOrders: cancelableOrders,\n    shippedOrders: shippedOrders,\n    deliveredOrders: deliveredOrders,\n    cancelledOrders: cancelledOrders,\n    nonCancelableOrders: nonCancelableOrders,\n    \n    // Counts for quick conditional logic (in IF nodes)\n    totalCount: allOrders.length,\n    cancelableCount: cancelableOrders.length,\n    shippedCount: shippedOrders.length,\n    deliveredCount: deliveredOrders.length,\n    cancelledCount: cancelledOrders.length,\n    nonCancelableCount: nonCancelableOrders.length,\n    \n    // A general status flag for high-level branching\n    status: cancelableOrders.length > 0 \n      ? 'has_cancelable' \n      : 'no_cancelable'\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        11088
+      ],
+      "id": "bcec610f-758e-4548-bf7e-fbcf5b1d8189",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2720,
+        11776
+      ],
+      "id": "1d2567d7-b6f7-476e-8578-95c27eea5c04",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MvTvDVM5oaSdVCv4",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// تحضير مدخل RAG (HTTP) لمسار others — نمرر chatId لاحقاً لإرسال الرد لتليجرام\nconst item = $input.first().json;\nreturn [{ json: {\n  question: (item.emailBody || item.message || '').toString().trim(),\n  emailFrom: (item.emailFrom || '').toString(),\n  emailSubject: (item.emailSubject || 'Chat').toString(),\n  chatId: (item.chatId || '').toString()\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        13312
+      ],
+      "id": "065fee45-47f4-4b75-9fee-a70ee2f31549",
+      "name": "Prepare RAG Input"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mineralogically-journalistic-rosina.ngrok-free.dev/ask",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "ngrok-skip-browser-warning",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { question: $json.question, emailFrom: $json.emailFrom || '', emailSubject: $json.emailSubject || 'Chat', chatId: $json.chatId || '' } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -560,
+        13328
+      ],
+      "id": "bf1a2499-1c17-4891-8781-4e1dfab22a09",
+      "name": "HTTP Request (RAG)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// استجابة RAG من HTTP أو من Execute Command — نحافظ على chatId إن وُجد\nconst item = $input.first().json;\nlet out = { answer: '', error: '', emailFrom: '', emailSubject: 'Chat', chatId: '' };\nif (item.answer !== undefined) { out = { ...out, ...item }; }\nelse if (item.body && typeof item.body === 'object') { out = { ...out, ...item.body }; }\nelse if (item.body && typeof item.body === 'string') { try { out = { ...out, ...JSON.parse(item.body) }; } catch(e) { out.error = e.message; } }\nelse { const raw = (item.stdout || item.stdoutTrim || '').toString().trim(); if (raw) try { out = { ...out, ...JSON.parse(raw) }; } catch(e) { out.error = e.message; } }\nreturn [{ json: out }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        13328
+      ],
+      "id": "e9e95747-109e-49c5-a912-152e2d0b4ae5",
+      "name": "Parse RAG Output"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $json.emailSubject }}",
+        "message": "={{ $json.answer }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        13344
+      ],
+      "id": "1bcd59d4-e2fb-4b7b-9e29-98b8707b4f10",
+      "name": "Create Gmail Draft (RAG)",
+      "webhookId": "a7647816-517a-4a09-b2a1-67438330cb79",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MvTvDVM5oaSdVCv4",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "rag-if-chatid",
+              "leftValue": "={{ $json.chatId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        13328
+      ],
+      "id": "dd293972-d47e-4510-a913-51b20b3a765d",
+      "name": " (has chatId)"
+    },
+    {
+      "parameters": {
+        "content": "# General Inquiry\n",
+        "height": 992,
+        "width": 3110,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1600,
+        12816
+      ],
+      "typeVersion": 1,
+      "id": "d2ba6cf0-de60-479b-a299-7b4997501a2f",
+      "name": "Sticky Note2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Get many rows2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get many rows1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare RAG Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "AI Agent7",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Update a row1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a row1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a draft in Gmail1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a draft in Gmail2": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a draft in Gmail3": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent4",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a draft in Gmail4": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows2": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent6",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent7",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a draft in Gmail7": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent7",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model10": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model11": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent3": {
+      "main": [
+        []
+      ]
+    },
+    "AI Agent2": {
+      "main": [
+        []
+      ]
+    },
+    "Draft": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message in Gmail3": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent6",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model12": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent4",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse RAG Output": {
+      "main": [
+        [
+          {
+            "node": " (has chatId)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare RAG Input": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request (RAG)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request (RAG)": {
+      "main": [
+        [
+          {
+            "node": "Parse RAG Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    " (has chatId)": {
+      "main": [
+        [
+          {
+            "node": "Create Gmail Draft (RAG)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Gmail Draft (RAG)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "66a9cfd1-4c9f-4ef3-8c9f-e3ba10ba2cd2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "964cdd86d3c73adfb2336f938b82468fdd685915536aba15306f97d94b7ccd52"
+  },
+  "id": "C6gAFYPE6Xh20TJ3-UoMg",
+  "tags": []
+}

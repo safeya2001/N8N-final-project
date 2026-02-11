@@ -1,479 +1,591 @@
-<<<<<<< HEAD
-# ⚽ Caster Sport - نظام الدعم الذكي | Smart Customer Support System
+# Caster Sport – AI-Powered Customer Support System
 
-> **نظام متكامل للدعم الفني** يجمع بين N8N Workflow و RAG API و Supabase لإدارة استفسارات العملاء تلقائياً  
-> **Complete Customer Support System** combining N8N Workflow automation, RAG API, and Supabase for intelligent customer service
+> **Intelligent, Policy-Aware Customer Support Automation**
+> Combining RAG (Retrieval-Augmented Generation), workflow automation, and vector databases to deliver instant, accurate, policy-compliant customer service responses.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)](https://flask.palletsprojects.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-blue.svg)](https://supabase.com)
 
 ---
 
-## 🏗️ System Architecture | بنية النظام
+## Table of Contents
 
-```mermaid
-flowchart TD
-    A[📧 Gmail Incoming Email] --> B[🔄 N8N Gmail Trigger]
-    B --> C[📝 Edit Fields & Extract Data]
-    C --> D{🤖 Text Classifier<br/>AI-Powered}
-    
-    D -->|Order Inquiry| E1[📦 Order Inquiry Track]
-    D -->|Cancel Order| E2[❌ Cancel Order Track]
-    D -->|Confirm Cancel| E3[✅ Confirm Cancel Track]
-    D -->|General Question| E4[💬 General Inquiry Track]
-    
-    E1 --> F1[🗄️ Supabase<br/>Get Orders by Email]
-    F1 --> G1[📊 Process & Categorize Orders]
-    G1 --> H1{Has Orders?}
-    H1 -->|Yes| I1[🤖 AI Agent + Order Data]
-    H1 -->|No| I2[🤖 AI Agent<br/>No Orders Found]
-    I1 --> J1[📤 Gmail Draft Response]
-    I2 --> J1
-    
-    E2 --> F2[🗄️ Supabase<br/>Get Cancelable Orders]
-    F2 --> H2{Can Cancel?}
-    H2 -->|Yes| I3[🤖 AI Agent<br/>Confirm Cancellation?]
-    H2 -->|No| I4[🤖 AI Agent<br/>Cannot Cancel]
-    I3 --> J2[📤 Gmail Draft Response]
-    I4 --> J2
-    
-    E3 --> F3[🗄️ Supabase<br/>Get Order to Cancel]
-    F3 --> H3{Order Found?}
-    H3 -->|Yes| I5[⚡ Update Order Status<br/>Set to 'cancelled']
-    H3 -->|No| I6[🤖 AI Agent<br/>Order Not Found]
-    I5 --> I7[🤖 AI Agent<br/>Cancellation Confirmed]
-    I6 --> J3[📤 Gmail Draft Response]
-    I7 --> J3
-    
-    E4 --> K[📝 Prepare RAG Input]
-    K --> L[🌐 HTTP POST Request<br/>RAG API Server]
-    L --> M[🔥 Flask RAG Server<br/>Port 5050]
-    M --> N[📚 Load Policy Files]
-    N --> O[🧠 FAISS Vector Search]
-    O --> P[🤖 Gemini 2.0 Flash<br/>Generate Response]
-    P --> Q[📤 Return JSON Response]
-    Q --> R[✉️ Parse RAG Output]
-    R --> S[📤 Gmail Draft Response]
-    
-    style A fill:#e3f2fd
-    style D fill:#fff3e0
-    style F1 fill:#f3e5f5
-    style F2 fill:#f3e5f5
-    style F3 fill:#f3e5f5
-    style M fill:#e8f5e9
-    style P fill:#fff9c4
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [System Architecture](#system-architecture)
+- [Technology Stack](#technology-stack)
+- [Prerequisites](#prerequisites)
+- [Installation & Setup](#installation--setup)
+  - [1. Clone the Repository](#1-clone-the-repository)
+  - [2. Database Setup](#2-database-setup)
+  - [3. RAG API Setup](#3-rag-api-setup)
+  - [4. n8n Workflow Setup](#4-n8n-workflow-setup)
+- [Database Schema](#database-schema)
+- [API Documentation](#api-documentation)
+- [Project Structure](#project-structure)
+- [Workflow Details](#workflow-details)
+- [Usage Guide](#usage-guide)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
+
+---
+
+## Overview
+
+**Caster Sport Customer Support System** is an end-to-end intelligent customer service platform designed specifically for e-commerce operations. The system automatically processes incoming customer emails, classifies inquiries, retrieves relevant information from both policy documents and order databases, and generates professional, context-aware email responses.
+
+### What Makes This System Special?
+
+- **Policy-Aware**: Uses RAG to ensure all responses align with company policies
+- **Order-Intelligent**: Automatically retrieves and processes customer order information
+- **Context-Sensitive**: Generates responses based on customer history and order status
+- **Multi-Lingual**: Supports both English and Arabic responses
+- **Fully Automated**: From email receipt to draft generation with minimal human intervention
+- **Vector Search**: Utilizes pgvector for semantic search over policies and email history
+
+---
+
+## Key Features
+
+### 🤖 Intelligent Email Classification
+- Automatically categorizes emails into:
+  - Order Inquiries
+  - Cancellation Requests
+  - Cancellation Confirmations
+  - General Questions
+- Intent detection using AI language models
+
+### 📚 RAG-Powered Knowledge Base
+- Retrieval-Augmented Generation for policy-compliant answers
+- FAISS vector store for efficient similarity search
+- Sentence transformers for semantic understanding
+- Real-time policy document retrieval
+
+### 🗄️ Smart Order Management
+- PostgreSQL database with Supabase
+- Real-time order status tracking
+- Automatic order retrieval by customer email
+- Support for complex order workflows (pending → shipped → delivered → cancelled)
+
+### 📧 Automated Email Generation
+- Professional, ready-to-send email drafts
+- Context-aware subject lines
+- Personalized greetings and closings
+- Multi-language support (English/Arabic)
+
+### 🔄 Workflow Automation with n8n
+- Visual workflow builder
+- Gmail integration for email triggers
+- Conditional routing based on intent
+- Error handling and fallback mechanisms
+
+### 🔍 Vector Search Capabilities
+- pgvector extension for PostgreSQL
+- Cosine similarity search on email embeddings
+- IVFFlat indexing for performance
+- Semantic retrieval over history
+
+---
+
+## System Architecture
+
+```
+┌─────────────────┐
+│  Gmail Inbox    │
+│  (Customer)     │
+└────────┬────────┘
+         │
+         │ Email Trigger
+         ▼
+┌─────────────────────────────────────────────┐
+│           n8n Workflow Engine               │
+│  ┌───────────────────────────────────────┐  │
+│  │  1. Email Classification (AI Agent)   │  │
+│  └───────────────┬───────────────────────┘  │
+│                  │                           │
+│  ┌───────────────▼───────────────────────┐  │
+│  │  2. Intent Routing                    │  │
+│  │     • Order Inquiry                   │  │
+│  │     • Cancel Order                    │  │
+│  │     • Confirm Cancel                  │  │
+│  │     • General Question                │  │
+│  └───┬───────────────────────────────┬───┘  │
+│      │                               │      │
+│      │ Order Tracks                  │ General
+│      ▼                               ▼      │
+│  ┌─────────────────┐        ┌────────────┐ │
+│  │  Supabase DB    │        │  RAG API   │ │
+│  │  Query Orders   │        │  /ask      │ │
+│  └────────┬────────┘        └──────┬─────┘ │
+│           │                        │        │
+│           ▼                        ▼        │
+│  ┌────────────────────────────────────────┐ │
+│  │  AI Agent: Generate Email Response     │ │
+│  └────────────────┬───────────────────────┘ │
+│                   │                          │
+└───────────────────┼──────────────────────────┘
+                    │
+                    ▼
+            ┌───────────────┐
+            │  Gmail Draft  │
+            │  (Ready)      │
+            └───────────────┘
 ```
 
----
+### Architecture Components
 
-## ✨ Key Features | المميزات الرئيسية
+#### 1. **Email Input Layer (Gmail)**
+   - Monitors inbox for new customer emails
+   - Extracts sender, subject, and body content
+   - Triggers n8n workflow on new message
 
-### 🎯 Core Capabilities
-- ✅ **Gmail Integration** - يستقبل ويرد على الإيميلات تلقائياً
-- ✅ **AI-Powered Classification** - تصنيف ذكي للاستفسارات (4 أنواع)
-- ✅ **Supabase Order Management** - إدارة الطلبات والإلغاءات
-- ✅ **RAG for General Questions** - إجابات ذكية من سياسات الشركة
-- ✅ **Multi-Language Support** - عربي وإنجليزي تلقائياً
-- ✅ **Automated Workflows** - 4 مسارات عمل ذكية
-- ✅ **OpenRouter AI Models** - GPT-4 Turbo للذكاء الاصطناعي
+#### 2. **Orchestration Layer (n8n)**
+   - **Classification Module**: Uses OpenRouter/Gemini AI to classify email intent
+   - **Routing Engine**: Directs requests to appropriate handlers
+   - **Data Retrieval**: Queries Supabase for order information
+   - **Response Generation**: Coordinates with RAG API or direct AI agents
 
-### 📊 Workflow Tracks | مسارات العمل
+#### 3. **Knowledge Layer (RAG API)**
+   - **Document Ingestion**: Loads policy text files from `/policies/`
+   - **Embedding Generation**: Creates vector embeddings using sentence-transformers
+   - **Vector Store**: FAISS index for fast similarity search
+   - **LLM Integration**: OpenRouter with Gemini 2.0 Flash for response generation
+   - **API Endpoints**:
+     - `GET /health` - Health check
+     - `POST /ask` - Process customer questions
 
-| Track | الوظيفة | AI Agent | Database |
-|-------|---------|----------|----------|
-| **Order Inquiry** 📦 | الاستعلام عن الطلبات | ✅ | Supabase |
-| **Cancel Order** ❌ | طلب إلغاء طلب | ✅ | Supabase |
-| **Confirm Cancel** ✅ | تأكيد الإلغاء | ✅ | Supabase Update |
-| **General Inquiry** 💬 | أسئلة عامة | RAG API | Policy Files |
+#### 4. **Data Layer (Supabase/PostgreSQL)**
+   - **Orders Table**: Customer order management with status tracking
+   - **Emails Table**: Email content storage with vector embeddings
+   - **pgvector Extension**: Native vector operations in PostgreSQL
+   - **Indexes**: Optimized for email lookups and similarity search
 
----
-
-## 🚀 Quick Start | البدء السريع
-
-### 📋 Prerequisites | المتطلبات
-
-#### Required Software | البرامج المطلوبة
-- 💻 **Windows 10+**
-- 🐍 **Python ≥ 3.9**
-- 📦 **Node.js & npm** (for N8N)
-- 🌐 **Internet Connection**
-
-#### Required Accounts | الحسابات المطلوبة
-- 🔑 **OpenRouter API Key** (for AI models)
-- 📧 **Gmail Account** (with App Password)
-- 🗄️ **Supabase Account** (for database)
+#### 5. **Output Layer (Gmail Drafts)**
+   - Auto-generated email drafts
+   - Ready for human review or auto-send
+   - Professional formatting with proper greetings/closings
 
 ---
 
-## 🔧 Setup Guide | دليل الإعداد
+## Technology Stack
 
-### Part 1️⃣: Install N8N
+### Backend & API
+- **Python 3.9+**: Core programming language
+- **Flask 2.0+**: RESTful API framework for RAG service
+- **LangChain**: RAG orchestration and LLM integration
+- **FAISS**: Facebook AI Similarity Search for vector operations
+- **sentence-transformers**: Text embedding models
+
+### Database & Storage
+- **Supabase**: PostgreSQL-as-a-Service platform
+- **PostgreSQL 14+**: Relational database
+- **pgvector**: Vector similarity search extension
+- **JSONB**: Semi-structured data storage (order items, metadata)
+
+### AI & Machine Learning
+- **OpenRouter API**: LLM gateway (Gemini 2.0 Flash)
+- **Sentence Transformers**: `all-MiniLM-L6-v2` for embeddings
+- **LangChain**: RAG framework and prompt engineering
+- **Google Gemini 2.0 Flash**: Fast, cost-effective LLM
+
+### Automation & Workflows
+- **n8n**: Visual workflow automation platform
+- **Gmail API**: Email integration (OAuth2)
+- **Webhook Integration**: HTTP endpoints for inter-service communication
+
+### Development Tools
+- **python-dotenv**: Environment variable management
+- **Git**: Version control
+- **Markdown**: Documentation
+
+---
+
+## Prerequisites
+
+### Software Requirements
+- **Python**: 3.9 or higher ([Download](https://www.python.org/downloads/))
+- **Git**: For cloning the repository ([Download](https://git-scm.com/))
+- **n8n**: Self-hosted or cloud instance ([Documentation](https://docs.n8n.io/))
+- **Gmail Account**: For email automation
+- **Supabase Account**: Free tier available ([Sign up](https://supabase.com))
+
+### API Keys & Credentials
+- **OpenRouter API Key**: Get from [openrouter.ai](https://openrouter.ai/)
+- **Gmail OAuth2 Credentials**: Configure in n8n
+- **Supabase Project URL & API Key**: From Supabase dashboard
+
+### System Requirements
+- **OS**: Windows 10+, macOS 10.15+, or Linux
+- **RAM**: Minimum 4GB (8GB+ recommended for local embedding generation)
+- **Storage**: ~500MB for dependencies and models
+- **Network**: Stable internet connection for API calls
+
+---
+
+## Installation & Setup
+
+### 1. Clone the Repository
 
 ```bash
-# Install N8N globally
-npm install -g n8n
-
-# Start N8N
-n8n start
-
-# N8N will be available at: http://localhost:5678
+git clone https://github.com/yourusername/caster-sport-support.git
+cd caster-sport-support
 ```
+
+Or download the ZIP file and extract it.
 
 ---
 
-### Part 2️⃣: Setup Supabase Database
+### 2. Database Setup
 
-1. **Create Supabase Project** at [supabase.com](https://supabase.com)
+#### 2.1 Create Supabase Project
 
-2. **Create `orders` Table**:
+1. Go to [supabase.com](https://supabase.com) and create a new project
+2. Wait for the database to initialize (~2 minutes)
+3. Navigate to **Project Settings → API**
+4. Copy the following credentials:
+   - **Project URL**: `https://xxxxx.supabase.co`
+   - **Anon/Public Key**: `eyJhbGc...` (long token)
+
+#### 2.2 Enable pgvector Extension
+
+1. In Supabase dashboard, go to **SQL Editor**
+2. Create a new query and run:
+
 ```sql
-CREATE TABLE orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_number VARCHAR(50) UNIQUE NOT NULL,
-  customer_email VARCHAR(255) NOT NULL,
-  customer_name VARCHAR(255),
-  phone_number VARCHAR(50),
-  status VARCHAR(50) NOT NULL DEFAULT 'pending',
-  total_amount DECIMAL(10, 2),
-  items JSONB,
-  created_at TIMESTAMP DEFAULT NOW()
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+3. Click **RUN** to execute
+
+#### 2.3 Create Database Tables
+
+Run the following SQL in the **SQL Editor**:
+
+```sql
+-- ==========================================
+-- ORDERS TABLE
+-- ==========================================
+CREATE TABLE public.orders (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  order_number TEXT NOT NULL,
+  customer_email TEXT NOT NULL,
+  customer_name TEXT NULL,
+  phone_number VARCHAR(20) NULL,
+  status TEXT NULL DEFAULT 'pending',
+  total_amount NUMERIC NULL,
+  items JSONB NULL,
+  created_at TIMESTAMPTZ NULL DEFAULT NOW(),
+  CONSTRAINT orders_pkey PRIMARY KEY (id)
 );
 
--- Create index for faster email queries
-CREATE INDEX idx_orders_email ON orders(customer_email);
-CREATE INDEX idx_orders_status ON orders(status);
+-- Indexes for performance
+CREATE INDEX idx_orders_email ON public.orders(customer_email);
+CREATE INDEX idx_orders_status ON public.orders(status);
+CREATE INDEX idx_orders_number ON public.orders(order_number);
+
+-- Add comments for documentation
+COMMENT ON TABLE public.orders IS 'Customer orders with status tracking';
+COMMENT ON COLUMN public.orders.status IS 'Values: pending, shipped, delivered, cancelled';
+
+-- ==========================================
+-- EMAILS TABLE (with vector embeddings)
+-- ==========================================
+CREATE TABLE public.emails (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  content TEXT NULL,
+  embedding VECTOR NULL,
+  metadata JSONB NULL,
+  created_at TIMESTAMPTZ NULL DEFAULT NOW(),
+  CONSTRAINT emails_pkey PRIMARY KEY (id)
+);
+
+-- Vector similarity index (IVFFlat)
+CREATE INDEX IF NOT EXISTS emails_embedding_idx
+  ON public.emails USING ivfflat (embedding vector_cosine_ops)
+  WITH (lists = 100);
+
+-- Index for timestamp queries
+CREATE INDEX idx_emails_created ON public.emails(created_at DESC);
+
+COMMENT ON TABLE public.emails IS 'Email content storage with vector embeddings for semantic search';
 ```
 
-3. **Get Supabase Credentials**:
-   - Go to **Project Settings** → **API**
-   - Copy **Project URL**
-   - Copy **anon/public API key**
+#### 2.4 Insert Sample Data (Optional)
 
----
-
-### Part 3️⃣: Setup Gmail
-
-1. **Enable 2-Factor Authentication** on your Gmail account
-
-2. **Create App Password**:
-   - Go to [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
-   - Generate a new app password
-   - Save it securely
-
-3. **Enable Gmail API**:
-   - Go to [console.cloud.google.com](https://console.cloud.google.com)
-   - Create/select a project
-   - Enable **Gmail API**
-   - Create **OAuth 2.0 credentials**
-   - Download credentials JSON
-
----
-
-### Part 4️⃣: Import & Configure N8N Workflow
-
-1. **Open N8N** at `http://localhost:5678`
-
-2. **Import Workflow**:
-   - Click **Workflows** → **Import from File**
-   - Select: `N8N/Main Workflow - V4.json`
-
-3. **Configure Credentials**:
-
-   #### Gmail OAuth2:
-   - Click **Gmail Trigger** node
-   - Add **Gmail OAuth2** credential
-   - Upload your OAuth credentials JSON
-   - Authorize access
-
-   #### OpenRouter API:
-   - Click any **OpenRouter Chat Model** node
-   - Add **OpenRouter API** credential
-   - Enter your API key from [openrouter.ai](https://openrouter.ai)
-
-   #### Supabase API:
-   - Click any **Supabase** node
-   - Add **Supabase** credential
-   - Enter Project URL and API key
-
-4. **Update RAG API URL**:
-   - Find **HTTP Request (RAG)** node
-   - Update URL to: `http://localhost:5050/ask`
-   - Or use ngrok URL for remote access
-
-5. **Activate Workflow**:
-   - Toggle **Active** switch to ON
-   - Workflow will start monitoring Gmail
-
----
-
-### Part 5️⃣: Setup RAG API Server
-
-#### Method 1: One-Click Setup ⭐ (Recommended)
-
-```bash
-# Navigate to RAG folder
-cd "Final project\RAG"
-
-# Double-click run.bat or run:
-.\run.bat
+```sql
+-- Sample order
+INSERT INTO public.orders (
+  order_number,
+  customer_email,
+  customer_name,
+  phone_number,
+  status,
+  total_amount,
+  items
+) VALUES (
+  'CS-2024-001',
+  'customer@example.com',
+  'Ahmed Ali',
+  '+962791234567',
+  'pending',
+  299.99,
+  '[
+    {
+      "product": "Football Jersey",
+      "size": "L",
+      "quantity": 2,
+      "price": 149.99
+    }
+  ]'::jsonb
+);
 ```
 
-#### Method 2: Manual Setup
+#### 2.5 Verify Tables
+
+Run this query to confirm tables were created:
+
+```sql
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_type = 'BASE TABLE';
+```
+
+Expected output:
+```
+orders
+emails
+```
+
+---
+
+### 3. RAG API Setup
+
+#### 3.1 Navigate to RAG Directory
 
 ```bash
-# 1. Navigate to RAG folder
-cd "Final project\RAG"
+cd RAG
+```
 
-# 2. Create .env file
+#### 3.2 Install Python Dependencies
+
+**Windows:**
+```bash
+pip install -r requirements.txt
+```
+
+**macOS/Linux:**
+```bash
+pip3 install -r requirements.txt
+```
+
+Or use the convenience script (Windows only):
+```bash
+run.bat
+```
+
+#### 3.3 Configure Environment Variables
+
+1. Create `.env` file:
+
+**Windows (CMD):**
+```bash
 copy .env.example .env
-
-# 3. Edit .env and add your OpenRouter API key
-# OPENROUTER_API_KEY=sk-or-v1-xxxxx
-
-# 4. Install Python dependencies
-py -m pip install flask langchain-core langchain-community ^
-    langchain-openai langchain-huggingface langchain-text-splitters ^
-    faiss-cpu sentence-transformers python-dotenv
-
-# 5. Run the server
-py rag_server.py
 ```
 
-#### Verify RAG Server:
+**macOS/Linux:**
 ```bash
-# Open browser and visit:
-http://localhost:5050/health
+cp .env.example .env
+```
 
-# Expected response:
+2. Edit `.env` with your credentials:
+
+```env
+# OpenRouter API Key (required)
+OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Optional: Change server port (default: 5050)
+PORT=5050
+
+# Optional: Enable debug mode
+FLASK_DEBUG=False
+```
+
+**Important**:
+- Never commit `.env` to Git
+- Keep your API keys secure
+- Get your OpenRouter key from: [openrouter.ai](https://openrouter.ai/)
+
+#### 3.4 Add Policy Documents
+
+The `policies/` folder contains the following default policy files:
+
+- `returns_refunds.txt` - Return and refund policy
+- `shipping_delays.txt` - Shipping delay handling
+- `damaged_goods.txt` - Damaged item procedures
+- `password_account.txt` - Account management
+- `general_contact.txt` - General support info
+- `cancel_shipment.txt` - Cancellation procedures
+- `exchange_policy.txt` - Exchange guidelines
+
+**To customize:**
+1. Edit existing `.txt` files with your actual policies
+2. Add new policies by creating new `.txt` files
+3. Restart the server to reload
+
+#### 3.5 Start the RAG Server
+
+**Windows:**
+```bash
+run.bat
+```
+
+Or manually:
+```bash
+python rag_server.py
+```
+
+**macOS/Linux:**
+```bash
+python3 rag_server.py
+```
+
+#### 3.6 Verify RAG API
+
+Open your browser and visit:
+```
+http://localhost:5050/health
+```
+
+Expected response:
+```json
 {"status": "ok"}
 ```
 
----
-
-## 🔌 RAG API Reference | مرجع واجهة RAG
-
-### Endpoint: POST /ask
-
-**Request:**
-```json
-{
-  "question": "What is your return policy?",
-  "emailFrom": "customer@example.com",
-  "emailSubject": "Return inquiry",
-  "chatId": ""
-}
-```
-
-**Response:**
-```json
-{
-  "answer": "Dear Customer,\n\nThank you for contacting Caster Sport...",
-  "emailSubject": "Re: Return inquiry",
-  "emailFrom": "customer@example.com",
-  "chatId": "",
-  "error": ""
-}
-```
-
-### Request Fields
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `question` | string | ✅ Yes* | Customer question text |
-| `emailBody` | string | ✅ Yes* | Alternative to question |
-| `emailFrom` | string | ⬜ Optional | Customer email address |
-| `emailSubject` | string | ⬜ Optional | Email subject line |
-| `chatId` | string | ⬜ Optional | Conversation ID |
-
-*At least one of `question` or `emailBody` is required
-
----
-
-## 📂 Policy Files | ملفات السياسات
-
-Located in `RAG/policies/`:
-
-| File | Content | استخدامه |
-|------|---------|-----------|
-| `returns_refunds.txt` | Return & Refund Policy | سياسة الإرجاع والاسترداد |
-| `shipping_delays.txt` | Shipping Delays | تأخيرات الشحن |
-| `damaged_goods.txt` | Damaged Items Policy | البضائع التالفة |
-| `cancel_shipment.txt` | Cancellation Policy | إلغاء الشحنات |
-| `exchange_policy.txt` | Exchange Policy | سياسة الاستبدال |
-| `password_account.txt` | Account Management | إدارة الحسابات |
-| `general_contact.txt` | Contact Information | معلومات التواصل |
-
-### Adding New Policies | إضافة سياسات جديدة
-
-1. Create a new `.txt` file in `RAG/policies/`
-2. Write policy content in plain text (Arabic or English)
-3. Restart RAG server: `py rag_server.py`
-
----
-
-## 🔄 How It Works | كيف يعمل النظام
-
-### Complete Flow | المسار الكامل
-
-1. **Email Arrives** 📧
-   - Customer sends email to your Gmail
-   - N8N Gmail Trigger detects new email
-
-2. **Data Extraction** 📝
-   - Extract: email body, sender, subject
-   - Prepare data for classification
-
-3. **AI Classification** 🤖
-   - Text Classifier analyzes email content
-   - Categorizes into 4 types:
-     - **Order Inquiry**: Customer asking about their order
-     - **Cancel Order**: Customer wants to cancel
-     - **Confirm Cancel**: Customer confirms cancellation
-     - **General Inquiry**: Other questions
-
-4. **Route to Appropriate Track** 🛤️
-
-   ### Track A: Order Inquiry 📦
-   - Query Supabase for customer's orders
-   - Process and categorize orders (pending, shipped, delivered, cancelled)
-   - AI Agent generates personalized response with order details
-   - Create Gmail draft
-
-   ### Track B: Cancel Order ❌
-   - Check if customer has cancelable orders (status='pending')
-   - If yes: AI Agent asks for confirmation
-   - If no: AI Agent explains order cannot be cancelled
-   - Create Gmail draft
-
-   ### Track C: Confirm Cancel ✅
-   - Find the specific order to cancel
-   - Update order status to 'cancelled' in Supabase
-   - AI Agent confirms cancellation
-   - Create Gmail draft
-
-   ### Track D: General Inquiry 💬
-   - Prepare question for RAG API
-   - Send HTTP POST to Flask server (port 5050)
-   - RAG server:
-     - Loads policy files
-     - Searches FAISS vector store
-     - Generates answer using Gemini 2.0
-   - Parse RAG response
-   - Create Gmail draft
-
-5. **Response Created** ✅
-   - Gmail draft is created automatically
-   - You can review and send manually
-   - Or configure N8N to send automatically
-
----
-
-## 🧪 Testing the System | اختبار النظام
-
-### Test 1: Order Inquiry
-Send email with body:
-```
-Subject: Order Status
-
-Hello,
-I would like to check the status of my order.
-My email: customer@example.com
-
-Thank you.
-```
-
-Expected: System finds orders in Supabase and responds with details.
-
----
-
-### Test 2: Cancel Request
-Send email with body:
-```
-Subject: Cancel Order
-
-Hi,
-I need to cancel my order #12345.
-
-Thanks.
-```
-
-Expected: System checks if order is cancelable and asks for confirmation.
-
----
-
-### Test 3: Confirm Cancellation
-Send email with body:
-```
-Subject: Re: Cancel Order
-
-Yes, please cancel order #12345.
-I confirm the cancellation.
-```
-
-Expected: System updates order status to 'cancelled' and confirms.
-
----
-
-### Test 4: General Question
-Send email with body:
-```
-Subject: Return Policy
-
-Hello,
-What is your return policy?
-
-Thank you.
-```
-
-Expected: RAG API retrieves policy from files and generates response.
-
----
-
-### Test 5: RAG API Direct Test
-
-**PowerShell:**
-```powershell
-$body = @{
-    question = "ما هي سياسة الشحن؟"
-    emailFrom = "test@example.com"
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Post `
-  -Uri "http://localhost:5050/ask" `
-  -Body $body `
-  -ContentType "application/json"
-```
-
-**CMD:**
-```cmd
-curl -X POST http://localhost:5050/ask ^
-  -H "Content-Type: application/json" ^
-  -d "{\"question\": \"What is your shipping policy?\"}"
+Test the `/ask` endpoint:
+```bash
+curl -X POST http://localhost:5050/ask \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "What is your return policy?",
+    "emailFrom": "test@example.com"
+  }'
 ```
 
 ---
 
-## 🗄️ Database Schema | مخطط قاعدة البيانات
+### 4. n8n Workflow Setup
+
+#### 4.1 Install n8n
+
+**Option 1: npm (recommended for development)**
+```bash
+npm install -g n8n
+n8n start
+```
+
+**Option 2: Docker**
+```bash
+docker run -it --rm \
+  --name n8n \
+  -p 5678:5678 \
+  -v ~/.n8n:/home/node/.n8n \
+  n8nio/n8n
+```
+
+Access n8n at: `http://localhost:5678`
+
+#### 4.2 Configure Credentials
+
+1. **Gmail OAuth2**:
+   - Go to **Credentials** → **New**
+   - Select **Gmail OAuth2**
+   - Follow Google OAuth setup wizard
+   - Grant permissions for Gmail read/send
+
+2. **OpenRouter API**:
+   - Add new **HTTP Header Auth** credential
+   - Header Name: `Authorization`
+   - Header Value: `Bearer YOUR_OPENROUTER_API_KEY`
+
+3. **Supabase**:
+   - Add **Supabase** credential
+   - Host: Your project URL (e.g., `xxxxx.supabase.co`)
+   - Service Role Key: Your anon/public API key
+
+#### 4.3 Import Workflow
+
+1. In n8n, click **Workflows** → **Import from File**
+2. Select `N8N/Main Simple - V4 (1).json`
+3. The workflow will load with all nodes
+
+#### 4.4 Configure Workflow Nodes
+
+Update the following nodes with your settings:
+
+**RAG API Node:**
+- URL: `http://localhost:5050/ask` (or your ngrok URL if remote)
+
+**Supabase Nodes:**
+- Select your Supabase credential
+- Verify table names match (`orders`, `emails`)
+
+**Gmail Nodes:**
+- Select your Gmail OAuth2 credential
+- Configure trigger filters if needed
+
+#### 4.5 Activate Workflow
+
+1. Click **Save** in the top-right
+2. Toggle **Active** switch to ON
+3. The workflow will now process incoming emails automatically
+
+---
+
+## Database Schema
 
 ### Orders Table
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | UUID | Unique order ID (Primary Key) |
-| `order_number` | VARCHAR(50) | Human-readable order number |
-| `customer_email` | VARCHAR(255) | Customer email address |
-| `customer_name` | VARCHAR(255) | Customer full name |
-| `phone_number` | VARCHAR(50) | Customer phone |
-| `status` | VARCHAR(50) | Order status (pending, shipped, delivered, cancelled) |
-| `total_amount` | DECIMAL(10,2) | Order total price |
-| `items` | JSONB | Order items (JSON format) |
-| `created_at` | TIMESTAMP | Order creation time |
+**Purpose**: Store and manage customer orders with lifecycle tracking.
 
-### Sample Order Data
+| Column           | Type         | Constraints       | Description                              |
+|------------------|--------------|-------------------|------------------------------------------|
+| `id`             | UUID         | PRIMARY KEY       | Unique order identifier (auto-generated) |
+| `order_number`   | TEXT         | NOT NULL          | Human-readable order number (e.g., CS-2024-001) |
+| `customer_email` | TEXT         | NOT NULL          | Customer email address                   |
+| `customer_name`  | TEXT         |                   | Customer full name                       |
+| `phone_number`   | VARCHAR(20)  |                   | Customer phone number                    |
+| `status`         | TEXT         | DEFAULT 'pending' | Order status (see values below)          |
+| `total_amount`   | NUMERIC      |                   | Order total in currency units            |
+| `items`          | JSONB        |                   | Array of order line items (JSON)         |
+| `created_at`     | TIMESTAMPTZ  | DEFAULT NOW()     | Order creation timestamp                 |
 
+**Status Values**:
+- `pending`: Order placed, can be cancelled
+- `shipped`: Order dispatched, cannot be cancelled (customer can refuse delivery)
+- `delivered`: Order received by customer
+- `cancelled`: Order cancelled
+
+**Indexes**:
+```sql
+idx_orders_email   -- B-tree on customer_email
+idx_orders_status  -- B-tree on status
+idx_orders_number  -- B-tree on order_number
+```
+
+**Example Row**:
 ```json
 {
+  "id": "550e8400-e29b-41d4-a716-446655440000",
   "order_number": "CS-2024-001",
-  "customer_email": "customer@example.com",
+  "customer_email": "ahmed@example.com",
   "customer_name": "Ahmed Ali",
-  "phone_number": "+966501234567",
+  "phone_number": "+962791234567",
   "status": "pending",
   "total_amount": 299.99,
   "items": [
@@ -483,429 +595,813 @@ curl -X POST http://localhost:5050/ask ^
       "quantity": 2,
       "price": 149.99
     }
-  ]
+  ],
+  "created_at": "2024-12-15T10:30:00Z"
 }
 ```
 
 ---
 
-## ⚙️ Configuration | الإعدادات
+### Emails Table
 
-### RAG Model Settings
+**Purpose**: Store email content with vector embeddings for semantic search.
 
-Located in `rag_server.py`:
+| Column      | Type        | Constraints | Description                                  |
+|-------------|-------------|-------------|----------------------------------------------|
+| `id`        | UUID        | PRIMARY KEY | Unique row identifier (auto-generated)       |
+| `content`   | TEXT        |             | Full email text or policy content            |
+| `embedding` | VECTOR      |             | Vector embedding (384-dimensional float array) |
+| `metadata`  | JSONB       |             | Additional data (subject, sender, tags)      |
+| `created_at`| TIMESTAMPTZ | DEFAULT NOW() | Record creation timestamp                  |
 
+**Indexes**:
+```sql
+emails_embedding_idx  -- IVFFlat index on embedding (vector_cosine_ops)
+idx_emails_created    -- B-tree on created_at DESC
+```
+
+**Vector Index Details**:
+- **Type**: IVFFlat (Inverted File with Flat Compression)
+- **Distance Metric**: Cosine similarity
+- **Lists Parameter**: 100 (for ~10,000 vectors; adjust based on dataset size)
+- **Embedding Dimension**: 384 (from `all-MiniLM-L6-v2` model)
+
+**Example Row**:
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440001",
+  "content": "Dear customer, regarding your inquiry about our return policy...",
+  "embedding": [0.123, -0.456, 0.789, ...], // 384 dimensions
+  "metadata": {
+    "subject": "Re: Return Policy Question",
+    "sender": "support@castersport.com",
+    "category": "policy",
+    "language": "en"
+  },
+  "created_at": "2024-12-15T11:00:00Z"
+}
+```
+
+---
+
+### Database Usage by Workflow
+
+| Table    | Intent Track       | Operation            | Query Example                                    |
+|----------|--------------------|----------------------|--------------------------------------------------|
+| `orders` | Order Inquiry      | `SELECT` (getAll)    | `WHERE customer_email = $1`                      |
+| `orders` | Cancel Order       | `SELECT` (getAll)    | `WHERE customer_email = $1 AND status = 'pending'` |
+| `orders` | Confirm Cancel     | `SELECT` + `UPDATE`  | `UPDATE ... SET status = 'cancelled' WHERE id = $1` |
+| `emails` | Semantic Search    | Vector similarity    | `ORDER BY embedding <=> $1 LIMIT 5`              |
+
+---
+
+## API Documentation
+
+### RAG API Endpoints
+
+Base URL: `http://localhost:5050`
+
+#### 1. Health Check
+
+**Endpoint**: `GET /health`
+
+**Response**: 200 OK
+```json
+{
+  "status": "ok"
+}
+```
+
+---
+
+#### 2. Ask Question (RAG)
+
+**Endpoint**: `POST /ask`
+
+**Headers**:
+```
+Content-Type: application/json
+```
+
+**Request Body**:
+```json
+{
+  "question": "What is your return policy?",          // Required (or emailBody)
+  "emailBody": "I want to return my order...",        // Alternative to question
+  "emailFrom": "customer@example.com",                // Optional
+  "emailSubject": "Return inquiry",                   // Optional
+  "chatId": "thread-123"                              // Optional
+}
+```
+
+**Parameters**:
+- `question` (string, optional*): Free-form customer question
+- `emailBody` (string, optional*): Full email body content
+- `emailFrom` (string, optional): Customer email address
+- `emailSubject` (string, optional): Original email subject
+- `chatId` (string, optional): Conversation/thread identifier
+
+*At least one of `question` or `emailBody` is required.
+
+**Success Response**: 200 OK
+```json
+{
+  "answer": "Dear Customer,\n\nThank you for contacting Caster Sport...",
+  "emailSubject": "Re: Return inquiry",
+  "emailFrom": "customer@example.com",
+  "chatId": "thread-123",
+  "error": ""
+}
+```
+
+**Error Response**: 400 Bad Request
+```json
+{
+  "answer": "",
+  "emailSubject": "Chat",
+  "emailFrom": "",
+  "chatId": "",
+  "error": "no_question"  // or "no_policies"
+}
+```
+
+**Error Codes**:
+- `no_question`: No question or emailBody provided
+- `no_policies`: Policy documents not found or failed to load
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:5050/ask \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "Can I cancel my order after it has shipped?",
+    "emailFrom": "customer@example.com",
+    "emailSubject": "Order cancellation"
+  }'
+```
+
+**Example Python**:
 ```python
-# LLM Model
-MODEL = "google/gemini-2.0-flash-001"
+import requests
 
-# Text Chunking
-CHUNK_SIZE = 800
-CHUNK_OVERLAP = 100
+response = requests.post(
+    "http://localhost:5050/ask",
+    json={
+        "question": "What is your exchange policy?",
+        "emailFrom": "customer@example.com"
+    }
+)
 
-# Embeddings Model
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-
-# Vector Store
-VECTOR_STORE = "FAISS"
+data = response.json()
+print(data["answer"])
 ```
 
-### N8N Workflow Settings
-
-- **Text Classifier Model**: `openai/gpt-4.1`
-- **AI Agent Temperature**: `0.6`
-- **Polling Interval**: N8N default (checks Gmail every minute)
-
 ---
 
-## 🐛 Troubleshooting | حل المشاكل
-
-### Common Issues | المشاكل الشائعة
-
-| Problem | الحل | Solution |
-|---------|------|----------|
-| **N8N workflow not triggering** | تحقق من<br/>✅ Gmail credentials<br/>✅ Workflow is Active<br/>✅ Gmail API enabled | Check<br/>✅ Gmail credentials<br/>✅ Workflow is Active<br/>✅ Gmail API enabled |
-| **Supabase connection error** | تأكد من<br/>✅ API URL correct<br/>✅ API key valid<br/>✅ Table 'orders' exists | Verify<br/>✅ API URL correct<br/>✅ API key valid<br/>✅ Table 'orders' exists |
-| **RAG API not responding** | افحص<br/>✅ Server running on port 5050<br/>✅ OpenRouter API key valid<br/>✅ Policy files exist | Check<br/>✅ Server running on port 5050<br/>✅ OpenRouter API key valid<br/>✅ Policy files exist |
-| **Classification not working** | راجع<br/>✅ OpenRouter credentials in N8N<br/>✅ Model name correct<br/>✅ Internet connection | Review<br/>✅ OpenRouter credentials in N8N<br/>✅ Model name correct<br/>✅ Internet connection |
-| **No orders found** | تأكد من<br/>✅ Email matches in database<br/>✅ Orders exist for customer<br/>✅ Supabase query correct | Verify<br/>✅ Email matches in database<br/>✅ Orders exist for customer<br/>✅ Supabase query correct |
-
----
-
-## 📁 Project Structure | هيكل المشروع
+## Project Structure
 
 ```
 Final project/
-├── README.md                          # 📖 هذا الملف - الدليل الكامل
 │
-├── N8N/
-│   └── Main Workflow - V4.json       # 🔄 N8N Workflow
-│                                      #    - Gmail Trigger
-│                                      #    - Text Classifier  
-│                                      #    - 4 AI Tracks
-│                                      #    - Supabase Integration
-│                                      #    - RAG API Connection
+├── RAG/                              # Python RAG API Service
+│   ├── rag_server.py                 # Flask server (main API)
+│   ├── requirements.txt              # Python dependencies
+│   ├── run.bat                       # Windows startup script
+│   ├── .env.example                  # Environment template
+│   ├── .env                          # Actual config (DO NOT COMMIT)
+│   │
+│   ├── policies/                     # Policy text files (RAG corpus)
+│   │   ├── returns_refunds.txt
+│   │   ├── shipping_delays.txt
+│   │   ├── damaged_goods.txt
+│   │   ├── password_account.txt
+│   │   ├── general_contact.txt
+│   │   ├── cancel_shipment.txt
+│   │   └── exchange_policy.txt
+│   │
+│   └── README.md                     # RAG-specific documentation
 │
-└── RAG/
-    ├── rag_server.py                 # 🔥 Flask API Server
-    │                                  #    - Policy loader
-    │                                  #    - FAISS vector store
-    │                                  #    - Gemini 2.0 integration
-    │
-    ├── run.bat                        # ⚡ Quick start script (Windows)
-    │
-    ├── .env.example                   # 🔑 Environment template
-    ├── .env                           # 🔑 Your API keys (create this)
-    │
-    └── policies/                      # 📚 Policy documents (.txt)
-        ├── returns_refunds.txt        #    - Returns & refunds
-        ├── shipping_delays.txt        #    - Shipping delays
-        ├── damaged_goods.txt          #    - Damaged items
-        ├── exchange_policy.txt        #    - Exchanges
-        ├── cancel_shipment.txt        #    - Cancellations
-        ├── password_account.txt       #    - Account management
-        └── general_contact.txt        #    - Contact info
-```
-
----
-
-## 🔐 Security Best Practices | أفضل ممارسات الأمان
-
-### ⚠️ Critical Security Notes
-
-- 🚫 **Never commit** `.env` file to Git
-- 🔒 **Use App Passwords** for Gmail (not your main password)
-- 🛡️ **Enable 2FA** on all accounts
-- 👥 **Limit API access** to trusted services only
-- 🔑 **Rotate credentials** regularly
-- 📝 **Review N8N logs** for suspicious activity
-- 🌐 **Use HTTPS** in production (ngrok for testing)
-- 🗄️ **Secure Supabase** with Row Level Security (RLS)
-
-### .gitignore Recommendations
-
-```gitignore
-# Environment variables
-.env
-*.env
-
-# N8N local data
-.n8n/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-venv/
-
-# API Keys
-*_credentials.json
-```
-
----
-
-## 📊 Tech Stack | المكدس التقني
-
-### 🔄 Automation Layer
-- **N8N** - Workflow automation platform
-- **Gmail API** - Email integration
-- **OpenRouter** - AI model access (GPT-4 Turbo)
-
-### 🗄️ Database Layer
-- **Supabase** - PostgreSQL database (orders management)
-
-### 🤖 AI Layer (RAG API)
-- **Python 3.9+** - Programming language
-- **Flask** - Web framework
-- **LangChain** - LLM orchestration
-- **FAISS** - Vector similarity search
-- **HuggingFace Transformers** - Embeddings
-- **Sentence Transformers** - all-MiniLM-L6-v2
-- **Google Gemini 2.0 Flash** - Text generation (via OpenRouter)
-
----
-
-## 🎯 Use Cases | حالات الاستخدام
-
-### ✅ Supported Scenarios | السيناريوهات المدعومة
-
-1. **Customer checks order status** 📦
-   - System retrieves all orders from Supabase
-   - Categorizes by status
-   - Provides detailed information
-
-2. **Customer wants to cancel order** ❌
-   - System checks if order is cancelable (status='pending')
-   - Asks for confirmation
-   - Prevents cancellation of shipped/delivered orders
-
-3. **Customer confirms cancellation** ✅
-   - System updates database
-   - Changes order status to 'cancelled'
-   - Confirms action to customer
-
-4. **Customer has general question** 💬
-   - System uses RAG API
-   - Searches policy documents
-   - Generates accurate, policy-based answer
-
-5. **Multi-turn conversations** 🔄
-   - System maintains context
-   - Handles follow-up questions
-   - Provides consistent responses
-
----
-
-## 🚀 Deployment Options | خيارات النشر
-
-### Option 1: Local Development ⚙️ (Current)
-- **N8N**: `http://localhost:5678`
-- **RAG API**: `http://localhost:5050`
-- **Supabase**: Cloud-hosted
-- **Best for**: Testing and development
-
-### Option 2: Cloud Deployment ☁️ (Production)
-
-#### Deploy N8N:
-- **N8N Cloud**: [n8n.cloud](https://n8n.cloud) (easiest)
-- **Self-hosted**: AWS, DigitalOcean, or Azure
-- Use Docker for easy deployment
-
-#### Deploy RAG API:
-- **Heroku**: Easy Python app deployment
-- **Railway**: Modern platform for Flask apps
-- **AWS EC2**: Full control
-- **Google Cloud Run**: Serverless option
-
-#### Use ngrok for Testing:
-```bash
-# Expose local RAG API to internet
-ngrok http 5050
-
-# Update N8N HTTP Request node with ngrok URL
-https://abc123.ngrok-free.app/ask
-```
-
----
-
-## 📈 Performance Tips | نصائح الأداء
-
-### Optimize RAG API:
-- ✅ Use caching for frequently asked questions
-- ✅ Pre-load embeddings at startup
-- ✅ Use smaller embedding models for faster responses
-- ✅ Implement rate limiting to prevent abuse
-
-### Optimize N8N Workflow:
-- ✅ Use "Always Output Data" for branches
-- ✅ Add error handling nodes
-- ✅ Log important data for debugging
-- ✅ Use conditional branches to reduce unnecessary API calls
-
-### Optimize Supabase:
-- ✅ Create indexes on frequently queried columns
-- ✅ Use RLS policies for security
-- ✅ Limit result sets with proper filtering
-- ✅ Use connection pooling for high traffic
-
----
-
-## 🔮 Future Enhancements | التطويرات المستقبلية
-
-### Planned Features:
-- 📊 **Analytics Dashboard** - Track support metrics
-- 🔄 **Auto-send emails** - Remove manual review step
-- 💬 **WhatsApp Integration** - Support via WhatsApp Business
-- 🌍 **More Languages** - French, Spanish, etc.
-- 📱 **SMS Notifications** - Order updates via SMS
-- 🤝 **CRM Integration** - Salesforce, HubSpot
-- 🧠 **Sentiment Analysis** - Detect angry customers
-- 📈 **Performance Monitoring** - Real-time metrics
-
----
-
-## 📞 Support & Help | الدعم والمساعدة
-
-### Need Help? | تحتاج مساعدة؟
-
-1. **Check Troubleshooting Section** above
-2. **Review N8N Execution Logs** in N8N interface
-3. **Test Each Component** separately:
-   - RAG API: `curl http://localhost:5050/health`
-   - Supabase: Check connection in N8N node
-   - Gmail: Verify OAuth2 credentials
-4. **Check Error Messages** in N8N workflow executions
-5. **Verify API Keys** are valid and not expired
-
----
-
-## 📄 License | الترخيص
-
-**Made with ❤️ for Caster Sport Customer Support**
-
-### Technologies & Credits:
-- **N8N** - Workflow Automation ([n8n.io](https://n8n.io))
-- **Supabase** - Database Platform ([supabase.com](https://supabase.com))
-- **OpenRouter** - AI Model Access ([openrouter.ai](https://openrouter.ai))
-- **Google Gemini** - LLM ([ai.google.dev](https://ai.google.dev))
-- **Flask** - Python Web Framework
-- **LangChain** - LLM Framework
-- **FAISS** - Vector Search Library
-
----
-
-## 📝 Quick Reference | مرجع سريع
-
-### Start Everything:
-
-```bash
-# Terminal 1: Start N8N
-n8n start
-
-# Terminal 2: Start RAG API
-cd "Final project\RAG"
-.\run.bat
-
-# Browser: Open N8N
-http://localhost:5678
-
-# Browser: Test RAG API
-http://localhost:5050/health
-```
-
-### Stop Everything:
-- Press `Ctrl+C` in both terminals
-- Or close terminal windows
-
----
-
-**🎉 System Ready! | النظام جاهز!**
-
-Your intelligent customer support system is now configured and ready to handle:
-- 📧 Gmail emails automatically
-- 📦 Order inquiries with Supabase integration
-- ❌ Order cancellations with database updates
-- 💬 General questions with RAG-powered responses
-- 🤖 AI-powered classification and responses
-
-**Happy Supporting! | دعم سعيد!** 🚀
-#   N 8 N - c u s t o m e r - s u p p o r t 
- 
-
- 
-=======
-## Caster Sport – Smart Customer Support System (Final Project)
-
-This repository contains the final project for a smart, policy‑aware customer support system for Caster Sport.  
-It combines a Python RAG API and n8n workflow automation to generate ready‑to‑send, policy‑compliant email replies from incoming customer messages.
-
----
-
-## 1. High‑Level Architecture
-
-- Incoming customer emails or tickets are received (for example via a Gmail trigger in n8n).
-- The n8n workflow extracts the relevant fields (sender, subject, body, order information).
-- n8n sends the cleaned question or email body to the RAG API (`POST /ask`).
-- The RAG API (Flask + LangChain + FAISS + OpenRouter) retrieves relevant policy snippets and uses an LLM (Gemini via OpenRouter) to generate:
-  - a suggested email subject, and
-  - a full email body.
-- n8n receives the structured response and forwards it to downstream systems (for example a Gmail draft, CRM ticket, or database record).
-
-For the detailed design and API of the RAG service, see `RAG/README.md`.
-
----
-
-## 2. Repository Structure
-
-```text
-Final project/
-├─ RAG/                     # Python RAG API (Flask + LangChain + FAISS)
-│  ├─ rag_server.py         # Policy‑aware email answer API
-│  ├─ policies/             # Policy text files used by the RAG system
-│  ├─ run.bat               # Windows helper script to install deps and run the server
-│  ├─ requirements.txt      # Python dependencies for the RAG service
-│  └─ README.md             # Detailed technical documentation for the RAG component
+├── N8N/                              # n8n Workflow Files
+│   └── Main Simple - V4 (1).json     # Complete automation workflow
 │
-├─ N8N/                     # n8n workflow(s) for orchestration / integration
-│  └─ Main Workflow - V4.json
-│
-├─ TECHNICAL REPORT.pdf     # Final written report (PDF)
-└─ TECHNICAL REPORT.docx    # Editable version of the final report
+├── .gitignore                        # Git exclusions
+├── CONTRIBUTING.md                   # Contribution guidelines
+├── LICENSE                           # MIT License
+├── README.md                         # This file (main documentation)
+├── TECHNICAL REPORT.pdf              # Academic/technical report (PDF)
+└── TECHNICAL REPORT.docx             # Academic/technical report (Word)
 ```
+
+### Key Files Explained
+
+**`rag_server.py`**:
+- Core RAG API implementation
+- Loads policies from `policies/` directory
+- Creates FAISS vector index
+- Exposes `/health` and `/ask` endpoints
+- Integrates with OpenRouter/Gemini LLM
+
+**`requirements.txt`**:
+- Python package dependencies
+- Flask, LangChain, FAISS, sentence-transformers
+- Run `pip install -r requirements.txt`
+
+**`run.bat`**:
+- Windows convenience script
+- Installs dependencies and starts server
+- Double-click to run
+
+**`.env.example`**:
+- Template for environment variables
+- Copy to `.env` and add your API keys
+
+**`policies/`**:
+- Plain text policy documents
+- Each file represents one policy domain
+- Automatically loaded and indexed by RAG system
+
+**`Main Simple - V4 (1).json`**:
+- n8n workflow definition
+- Import into n8n to get the full automation
+
+**`TECHNICAL REPORT.pdf`**:
+- Comprehensive technical documentation
+- Architecture diagrams
+- Implementation details
+- Use cases and testing
 
 ---
 
-## 3. RAG API – Quick Start (Windows)
+## Workflow Details
 
-1. Clone or download this repository.
-2. Open a terminal in the `RAG` folder:
+### n8n Workflow: Main Simple V4
 
+#### Workflow Overview
+
+The workflow implements a complete customer service automation pipeline with four distinct tracks:
+
+1. **Order Inquiry Track**: Retrieve and display customer order information
+2. **Cancel Order Track**: Process order cancellation requests
+3. **Confirm Cancel Track**: Finalize order cancellations
+4. **General Question Track**: Answer policy/general questions using RAG
+
+#### Workflow Nodes Breakdown
+
+**1. Gmail Trigger**
+- **Type**: Trigger node
+- **Function**: Monitors Gmail inbox for new emails
+- **Filter**: Can be configured to filter by label, sender, subject, etc.
+- **Output**: Email metadata (from, subject, body, attachments)
+
+**2. AI Classifier Agent**
+- **Type**: AI Agent node (OpenRouter)
+- **Model**: Gemini 2.0 Flash
+- **Function**: Classifies email intent into one of four categories
+- **Prompt Engineering**:
+  ```
+  Classify this email into one category:
+  - "Order Inquiry": Customer asking about order status
+  - "Cancel Order": Customer wants to cancel
+  - "Confirm Cancel": Follow-up to confirm cancellation
+  - "General Question": Policy or general inquiry
+
+  Email: {emailBody}
+
+  Respond with only the category name.
+  ```
+
+**3. Switch Node (Intent Router)**
+- **Type**: Routing node
+- **Function**: Routes to correct track based on classification
+- **Conditions**:
+  - Route 0: `intent === "Order Inquiry"`
+  - Route 1: `intent === "Cancel Order"`
+  - Route 2: `intent === "Confirm Cancel"`
+  - Route 3: `intent === "General Question"`
+
+**4. Supabase Query Nodes** (Routes 0-2)
+- **Type**: Database node
+- **Operation**: `getAll` (SELECT)
+- **Table**: `orders`
+- **Filters**:
+  - Order Inquiry: `customer_email = {{ $node["Gmail Trigger"].json["from"] }}`
+  - Cancel Order: `customer_email = ... AND status = 'pending'`
+  - Confirm Cancel: `customer_email = ... AND order_number = {{ extracted_number }}`
+
+**5. RAG API Call** (Route 3)
+- **Type**: HTTP Request node
+- **Method**: POST
+- **URL**: `http://localhost:5050/ask`
+- **Body**:
+  ```json
+  {
+    "question": "{{ $node["Gmail Trigger"].json["body"] }}",
+    "emailFrom": "{{ $node["Gmail Trigger"].json["from"] }}",
+    "emailSubject": "{{ $node["Gmail Trigger"].json["subject"] }}"
+  }
+  ```
+
+**6. AI Response Generator Nodes**
+- **Type**: AI Agent node
+- **Function**: Generate contextual email response
+- **Context Injection**:
+  - Orders data from Supabase
+  - Customer email/name
+  - Original question
+- **Output**: Professional email with greeting, content, closing
+
+**7. Gmail Draft Creator**
+- **Type**: Gmail node
+- **Operation**: Create draft
+- **To**: `{{ $node["Gmail Trigger"].json["from"] }}`
+- **Subject**: `Re: {{ $node["Gmail Trigger"].json["subject"] }}`
+- **Body**: `{{ $node["AI Response Generator"].json["answer"] }}`
+
+#### Error Handling
+
+- **Supabase Errors**: Fallback to generic "please contact support" message
+- **RAG API Errors**: Retry mechanism with 3 attempts
+- **Classification Errors**: Default to General Question track
+- **LLM Errors**: Logged and escalated to human agent
+
+---
+
+## Usage Guide
+
+### For End Users (Customers)
+
+1. **Send an email** to your configured Gmail address
+2. **Wait for processing** (typically 10-30 seconds)
+3. **Receive a draft** in your Gmail drafts folder (or auto-sent if configured)
+
+### For Customer Service Agents
+
+1. **Monitor drafts**: Review auto-generated drafts before sending
+2. **Edit if needed**: Modify tone, add personal touches, or clarify details
+3. **Send**: Click send in Gmail when satisfied
+4. **Track performance**: Monitor response quality and accuracy
+
+### For Administrators
+
+#### Adding New Policies
+
+1. Navigate to `RAG/policies/`
+2. Create a new `.txt` file (e.g., `warranty_policy.txt`)
+3. Write the policy content in plain text
+4. Restart the RAG server: `python rag_server.py`
+5. Test with a question:
    ```bash
-   cd "Final project\RAG"
+   curl -X POST http://localhost:5050/ask \
+     -H "Content-Type: application/json" \
+     -d '{"question": "What is your warranty policy?"}'
    ```
 
-3. Install dependencies (optional if you prefer not to use `run.bat`):
+#### Updating Existing Policies
 
+1. Edit the `.txt` file in `RAG/policies/`
+2. Save changes
+3. Restart RAG server to reload
+4. No database changes needed
+
+#### Managing Orders
+
+**Add order programmatically**:
+```sql
+INSERT INTO orders (order_number, customer_email, customer_name, status, total_amount, items)
+VALUES (
+  'CS-2024-123',
+  'customer@example.com',
+  'John Doe',
+  'pending',
+  150.00,
+  '[{"product": "Running Shoes", "quantity": 1, "price": 150.00}]'::jsonb
+);
+```
+
+**Update order status**:
+```sql
+UPDATE orders
+SET status = 'shipped'
+WHERE order_number = 'CS-2024-123';
+```
+
+**Query customer orders**:
+```sql
+SELECT * FROM orders
+WHERE customer_email = 'customer@example.com'
+ORDER BY created_at DESC;
+```
+
+#### Monitoring System Health
+
+**Check RAG API**:
+```bash
+curl http://localhost:5050/health
+```
+
+**Check n8n workflow**:
+- Go to n8n dashboard: `http://localhost:5678`
+- View workflow executions
+- Check for errors in execution logs
+
+**Check database**:
+```sql
+-- Count orders by status
+SELECT status, COUNT(*)
+FROM orders
+GROUP BY status;
+
+-- Count emails with embeddings
+SELECT COUNT(*)
+FROM emails
+WHERE embedding IS NOT NULL;
+```
+
+---
+
+## Deployment
+
+### Production Considerations
+
+#### RAG API Deployment
+
+**Option 1: Traditional Server (VPS/Dedicated)**
+
+1. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
+   pip install gunicorn  # Production WSGI server
    ```
 
-4. Create the environment file from the example:
-
+2. **Set environment variables**:
    ```bash
-   copy .env.example .env
+   export OPENROUTER_API_KEY=your_key_here
+   export FLASK_ENV=production
    ```
 
-5. Edit `.env` and set your `OPENROUTER_API_KEY`.
-6. Start the server using the helper script:
-
+3. **Run with Gunicorn**:
    ```bash
-   run.bat
+   gunicorn -w 4 -b 0.0.0.0:5050 rag_server:app
    ```
 
-7. Open in a browser:
+4. **Configure reverse proxy** (nginx):
+   ```nginx
+   server {
+       listen 80;
+       server_name api.castersport.com;
 
-   ```text
-   http://localhost:5050/health
+       location / {
+           proxy_pass http://localhost:5050;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+       }
+   }
    ```
 
-   Expected response:
+**Option 2: Docker Deployment**
 
-   ```json
-   {"status": "ok"}
-   ```
+Create `Dockerfile` in `RAG/`:
+```dockerfile
+FROM python:3.9-slim
 
-You can now call the RAG API using the `POST /ask` endpoint as documented in `RAG/README.md`.
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 5050
+
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5050", "rag_server:app"]
+```
+
+Build and run:
+```bash
+docker build -t caster-rag-api .
+docker run -d -p 5050:5050 --env-file .env caster-rag-api
+```
+
+**Option 3: Cloud Platforms**
+
+- **Google Cloud Run**: Serverless, auto-scaling
+- **AWS Lambda + API Gateway**: Pay-per-request
+- **Heroku**: Simple deployment with git push
+- **Railway/Render**: Modern PaaS platforms
+
+#### n8n Deployment
+
+**Self-Hosted**:
+```bash
+docker run -d \
+  --name n8n \
+  -p 5678:5678 \
+  -v ~/.n8n:/home/node/.n8n \
+  n8nio/n8n
+```
+
+**n8n Cloud**: Managed hosting at [n8n.cloud](https://n8n.cloud)
+
+#### Database (Supabase)
+
+Already cloud-hosted! Production-ready features:
+- Automatic backups
+- Point-in-time recovery
+- Connection pooling
+- Global CDN
+- 99.9% uptime SLA
+
+#### Security Best Practices
+
+1. **API Keys**:
+   - Use environment variables, never hardcode
+   - Rotate keys regularly
+   - Use separate keys for dev/staging/production
+
+2. **Database**:
+   - Enable Row Level Security (RLS) in Supabase
+   - Use service role key only on backend
+   - Implement rate limiting
+
+3. **HTTPS**:
+   - Use SSL/TLS certificates (Let's Encrypt is free)
+   - Force HTTPS redirects
+   - Enable HSTS headers
+
+4. **Network**:
+   - Firewall rules to restrict access
+   - VPN for administrative access
+   - DDoS protection (Cloudflare)
+
+5. **Monitoring**:
+   - Set up logging (e.g., Sentry, LogRocket)
+   - Monitor API usage and costs
+   - Set up alerts for errors/downtime
 
 ---
 
-## 4. n8n Workflow (Automation Layer)
+## Troubleshooting
 
-The file `N8N/Main Workflow - V4.json` can be imported into an n8n instance. At a high level, the workflow:
+### Common Issues
 
-- Receives incoming events (for example, emails from a Gmail trigger).
-- Normalises and classifies the request (order inquiry, cancel request, confirm cancel, general question).
-- Calls the RAG API (`/ask`) with the appropriate text and metadata.
-- Uses the structured response (subject and body) to build a draft reply or update downstream systems (email, ticketing, database, and so on).
+#### RAG API Issues
 
-The workflow is optional but demonstrates how the RAG engine can be integrated into a real automation platform without changing the Python code.
+**Issue**: `{"error": "no_policies"}`
+
+**Solution**:
+1. Verify `policies/` folder exists in `RAG/` directory
+2. Check that it contains at least one `.txt` file with content
+3. Restart the RAG server
 
 ---
 
-## 5. Documentation
+**Issue**: OpenRouter API authentication error
 
-- RAG implementation and API: `RAG/README.md`
-- Academic / formal project description: `TECHNICAL REPORT.pdf` and `TECHNICAL REPORT.docx`
+**Solution**:
+1. Verify `OPENROUTER_API_KEY` in `.env` is correct
+2. Check key format: `sk-or-v1-...`
+3. Confirm you have credits/quota on OpenRouter
+4. Test key with:
+   ```bash
+   curl https://openrouter.ai/api/v1/models \
+     -H "Authorization: Bearer $OPENROUTER_API_KEY"
+   ```
 
-Together, these provide:
+---
 
-- A clear technical entry point for developers (RAG README).
-- A concise top‑level overview of components and architecture (this README).
-- A complete written project report for academic or business review (technical report).
+**Issue**: `ModuleNotFoundError: No module named 'langchain'`
 
->>>>>>> 1e4f0d2 (Update docs and RAG+n8n project structure)
-#   N 8 N - f i n a l - p r o j e c t  
- #   N 8 N - f i n a l - p r o j e c t  
- #   N 8 N - f i n a l - p r o j e c t  
- #   N 8 N - f i n a l - p r o j e c t  
- 
+**Solution**:
+```bash
+pip install -r requirements.txt
+```
+
+If still failing, try:
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt --force-reinstall
+```
+
+---
+
+#### n8n Workflow Issues
+
+**Issue**: Gmail trigger not activating
+
+**Solution**:
+1. Re-authenticate Gmail OAuth2 in Credentials
+2. Check Gmail API is enabled in Google Cloud Console
+3. Verify trigger is set to "Active" mode
+4. Check filter conditions aren't too restrictive
+
+---
+
+**Issue**: Supabase query returns no results
+
+**Solution**:
+1. Verify customer email exists in `orders` table
+2. Check for case sensitivity: `customer_email` is case-sensitive
+3. Confirm Supabase credential has correct URL and API key
+4. Test query in Supabase SQL editor
+
+---
+
+**Issue**: RAG API call fails from n8n
+
+**Solution**:
+1. Verify RAG server is running: `curl http://localhost:5050/health`
+2. If n8n is remote, use ngrok to expose RAG API:
+   ```bash
+   ngrok http 5050
+   ```
+   Update n8n HTTP node URL to ngrok URL
+3. Check firewall rules allow connections
+
+---
+
+#### Database Issues
+
+**Issue**: `pgvector` extension not available
+
+**Solution**:
+```sql
+-- Enable in Supabase SQL editor
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+If error persists, contact Supabase support.
+
+---
+
+**Issue**: Slow vector similarity queries
+
+**Solution**:
+1. Ensure IVFFlat index exists:
+   ```sql
+   \d emails  -- In psql to see indexes
+   ```
+2. Rebuild index:
+   ```sql
+   DROP INDEX IF EXISTS emails_embedding_idx;
+   CREATE INDEX emails_embedding_idx
+     ON emails USING ivfflat (embedding vector_cosine_ops)
+     WITH (lists = 100);
+   ```
+3. Adjust `lists` parameter based on data size:
+   - 1K-10K rows: lists = 100
+   - 10K-100K rows: lists = 1000
+   - 100K+ rows: lists = sqrt(row_count)
+
+---
+
+**Issue**: JSONB query errors
+
+**Solution**:
+Use proper JSONB operators:
+```sql
+-- Check if key exists
+SELECT * FROM orders WHERE items ? 'product';
+
+-- Query nested values
+SELECT * FROM orders WHERE items @> '[{"product": "Football Jersey"}]';
+```
+
+---
+
+### Debugging Tips
+
+1. **Enable verbose logging**:
+   ```python
+   # In rag_server.py
+   app.config['DEBUG'] = True
+   ```
+
+2. **Check n8n execution logs**:
+   - Click on workflow execution
+   - View input/output of each node
+   - Check error messages in red nodes
+
+3. **Monitor database queries**:
+   - Supabase Dashboard → Logs → Postgres Logs
+   - Enable real-time query logging
+
+4. **Test components in isolation**:
+   - RAG API: Use cURL/Postman
+   - Database: Run queries in SQL editor
+   - n8n: Test workflow manually with sample data
+
+---
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+### Quick Start for Contributors
+
+1. **Fork the repository**
+2. **Create a feature branch**:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Make your changes**
+4. **Test thoroughly**
+5. **Commit with descriptive messages**:
+   ```bash
+   git commit -m "feat: add multi-language support for responses"
+   ```
+6. **Push and create PR**:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+### Contribution Areas
+
+- **Policy Templates**: Add industry-specific policy templates
+- **Language Support**: Expand multi-language capabilities
+- **Integrations**: Add support for other email providers, CRMs
+- **Performance**: Optimize embedding generation, query speed
+- **Documentation**: Improve guides, add tutorials, create videos
+- **Testing**: Write unit/integration tests
+
+---
+
+## License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+### What This Means
+
+You are free to:
+- Use this software commercially
+- Modify the source code
+- Distribute the software
+- Use it privately
+
+Under the conditions that:
+- You include the original license and copyright notice
+- The software is provided "as-is" without warranty
+
+---
+
+## Acknowledgments
+
+### Technologies
+
+- **LangChain**: For the excellent RAG framework
+- **Supabase**: For providing world-class PostgreSQL hosting
+- **n8n**: For the powerful workflow automation platform
+- **OpenRouter**: For unified LLM API access
+- **Sentence Transformers**: For semantic embedding models
+
+### Contributors
+
+- **Ahmed Ali** - Initial development and architecture
+- **Caster Sport Team** - Domain expertise and policy content
+
+### Special Thanks
+
+- Anthropic Claude for AI assistance
+- The open-source community for invaluable tools and libraries
+
+---
+
+## Support & Contact
+
+- **Documentation**: See `TECHNICAL REPORT.pdf` for in-depth details
+- **Issues**: Open an issue on GitHub
+- **Email**: support@castersport.com
+- **Website**: [castersport.com](https://castersport.com)
+
+---
+
+## Roadmap
+
+### Planned Features
+
+- [ ] Multi-channel support (WhatsApp, Telegram, live chat)
+- [ ] Voice-to-text integration for phone support
+- [ ] Advanced analytics dashboard
+- [ ] A/B testing for response quality
+- [ ] Customer satisfaction scoring (CSAT)
+- [ ] Multilingual expansion (French, Spanish, German)
+- [ ] Integration with inventory management systems
+- [ ] Automated follow-up scheduling
+- [ ] Sentiment analysis for priority routing
+- [ ] Knowledge base article recommendations
+
+### Version History
+
+- **v1.0** (Current): Core RAG + n8n automation
+- **v0.9**: Beta testing with sample data
+- **v0.5**: Initial RAG API implementation
+- **v0.1**: Proof of concept
+
+---
+
+<p align="center">
+  <strong>Built with ❤️ for exceptional customer service</strong>
+</p>
+
+<p align="center">
+  <a href="#table-of-contents">Back to Top ↑</a>
+</p>
